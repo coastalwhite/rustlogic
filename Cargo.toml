@@ -7,7 +7,8 @@ description = "A Rust Library for basic parsing and handling of logical formulas
 homepage = "https://github.com/coastalwhite/rustlogic"
 repository = "https://github.com/coastalwhite/rustlogic.git"
 license = "MIT"
+readme = "./README.md"
 
-keywords = ["logic", "parser", "circuit", "circuits", "gate", "gates", "logical"]
+keywords = ["logic", "parser", "circuit", "gate", "logical"]
 
 categories = ["parser-implementations", "science"]

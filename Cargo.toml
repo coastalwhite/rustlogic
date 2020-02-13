@@ -8,6 +8,6 @@ homepage = "https://github.com/coastalwhite/rustlogic"
 repository = "https://github.com/coastalwhite/rustlogic.git"
 license = "MIT"
 
-keywords = ["logic", "parser", "circuit", "circuits", "gate", "gates", "logical"]
+keywords = ["logic", "parser", "circuit", "gate", "logical"]
 
 categories = ["parser-implementations", "science"]

@@ -1,0 +1,13 @@
+[package]
+name = "rustlogic"
+version = "0.1.0"
+authors = ["Gijs Burghoorn <g.burghoorn@gmail.com>"]
+edition = "2018"
+description = "A Rust Library for basic parsing and handling of logical formulas"
+homepage = "https://github.com/coastalwhite/rustlogic"
+repository = "https://github.com/coastalwhite/rustlogic.git"
+license = "MIT"
+
+keywords = ["logic", "parser", "circuit", "circuits", "gate", "gates", "logical"]
+
+categories = ["parser-implementations", "science"]

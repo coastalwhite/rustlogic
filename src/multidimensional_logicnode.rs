@@ -42,12 +42,12 @@ impl MultiDimensionalLogicNode {
 
                 match multi_dim_left {
                     Or(mut left_ors) => ors.append(&mut left_ors),
-                    _ => (),
+                    _ => ors.push(multi_dim_left),
                 };
 
                 match multi_dim_right {
                     Or(mut right_ors) => ors.append(&mut right_ors),
-                    _ => (),
+                    _ => ors.push(multi_dim_right),
                 };
 
                 Or(ors)

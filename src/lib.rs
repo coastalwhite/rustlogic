@@ -37,6 +37,9 @@
 //! # assert!(!value);
 //! ```
 
+mod multidimensional_logicnode;
+mod util;
+
 use std::collections::HashMap;
 
 /// An Enum of all the possible states of a head of a logical formula
@@ -59,6 +62,19 @@ pub enum LogicNode {
 
     /// Variable, always returns value of variable passed in
     Variable(String),
+}
+
+/// Returns if a character is allowed within a variable name
+///
+/// For now:
+/// Check if a certain ASCII character in the form of a *u8*
+/// falls into the alphabetic range, numeric range or is - or _
+fn is_allowed_character_in_variable(character: u8) -> bool {
+    (character >= b'a' && character <= b'z')
+        || (character >= b'A' && character <= b'Z')
+        || (character >= b'0' && character <= b'9')
+        || character == b'_'
+        || character == b'-'
 }
 
 impl LogicNode {
@@ -200,6 +216,116 @@ impl LogicNode {
             Variable(_) => true,
         }
     }
+
+    /// Returns a sorted vector of all Variables used in a LogicNode
+    ///
+    /// # Examples
+    /// ## NOR
+    /// ```
+    /// # use std::collections::HashMap;
+    /// # use rustlogic::parse;
+    /// let nor = parse("~([a]|[b])")
+    ///     .expect("Unable to parse with variable");
+    ///
+    /// // Will return ["a", "b"]
+    /// println!("Variables in nor: {:?}", nor.get_variables());
+    /// # assert_eq!(nor.get_variables(), vec!["a", "b"]);
+    /// ```
+    pub fn get_variables(&self) -> Vec<String> {
+        let mut variables = Vec::new();
+
+        use LogicNode::*;
+
+        // Go through elements recurvely
+        match self {
+            And(left, right) | Or(left, right) => {
+                variables.extend(left.get_variables().iter().cloned());
+                variables.extend(right.get_variables().iter().cloned());
+            }
+
+            Not(child) => variables.extend(child.get_variables().iter().cloned()),
+
+            True | False => (),
+
+            Variable(var) => variables = vec![var.clone()],
+        }
+
+        // Sort the variables in preparation for the deduplication
+        variables.sort();
+
+        // Remove duplicates
+        variables.dedup();
+
+        variables
+    }
+
+    /// Inserts formula in place of variable
+    ///
+    /// # Examples
+    /// ## Insert AND in OR
+    /// ```rust
+    /// # use std::collections::HashMap;
+    /// # use rustlogic::parse;
+    /// let or = parse("[AND]|[b]").expect("Error parsing or");
+    ///
+    /// # assert_eq!(or.to_string(), "([AND]|[b])");
+    /// let and_in_or = or.insert_formula(
+    ///     "AND",
+    ///     &parse("[x]&[y]").expect("Error parsing AND")
+    /// );
+    ///
+    /// println!("{}", and_in_or); // Will print (([x]&[y])|[b])
+    /// # assert_eq!(and_in_or.to_string(), "(([x]&[y])|[b])");
+    pub fn insert_formula(&self, variable: &str, formula: &LogicNode) -> LogicNode {
+        use LogicNode::*;
+
+        match self {
+            And(left, right) => And(
+                Box::new(left.insert_formula(variable, formula)),
+                Box::new(right.insert_formula(variable, formula)),
+            ),
+
+            Or(left, right) => Or(
+                Box::new(left.insert_formula(variable, formula)),
+                Box::new(right.insert_formula(variable, formula)),
+            ),
+
+            Not(child) => Not(Box::new(child.insert_formula(variable, formula))),
+
+            Variable(var) => {
+                if var == variable {
+                    return formula.clone();
+                }
+
+                Variable(var.clone())
+            }
+
+            True => True,
+            False => False,
+        }
+    }
+}
+
+impl std::fmt::Display for LogicNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let multi_dim = multidimensional_logicnode::MultiDimensionalLogicNode::new(self);
+        write!(f, "{}", multi_dim)
+    }
+}
+
+impl std::clone::Clone for LogicNode {
+    fn clone(&self) -> Self {
+        use LogicNode::*;
+
+        match self {
+            And(left, right) => And(left.clone(), right.clone()),
+            Or(left, right) => Or(left.clone(), right.clone()),
+            Not(child) => Not(child.clone()),
+            True => True,
+            False => False,
+            Variable(var) => Variable(var.clone()),
+        }
+    }
 }
 
 /// The opening symbol of a priority group
@@ -231,11 +357,11 @@ pub const FALSE_SYMBOL: u8 = b'0';
 
 /// The opening symbol for a variable
 /// ## Default: '\['
-pub const LITERAL_OPEN_SYMBOL: u8 = b'[';
+pub const VARIABLE_OPEN_SYMBOL: u8 = b'[';
 
 /// The closing symbol for a variable
 /// ## Default: '\]'
-pub const LITERAL_CLOSE_SYMBOL: u8 = b']';
+pub const VARIABLE_CLOSE_SYMBOL: u8 = b']';
 
 /// Function used to find the matching parenthesis given a string
 /// and a position open a opening group symbol (taking into account depth)
@@ -286,22 +412,13 @@ fn matching_group_symbol(input_string: &str, position: usize) -> Option<usize> {
     None
 }
 
-/// Returns if a character is allowed within a variable name
-///
-/// For now:
-/// Check if a certain ASCII character in the form of a *u8*
-/// falls into the alphabetic range
-fn is_variable_allowable(c: u8) -> bool {
-    (c >= b'a' && c <= b'z') || (c >= b'A' && c <= b'Z')
-}
-
 /// Function used to fetch if a input consists of a variable,
 /// and ifso what this variable is
 fn get_variable_name(input_string: &str, position: usize) -> Option<String> {
     // Fetch opening character and check if
     // this is a opening character for a variable
     let opening_character = input_string.as_bytes()[position];
-    if opening_character != LITERAL_OPEN_SYMBOL {
+    if opening_character != VARIABLE_OPEN_SYMBOL {
         return None;
     }
 
@@ -316,7 +433,7 @@ fn get_variable_name(input_string: &str, position: usize) -> Option<String> {
         let character = character.clone();
 
         // If character is the closing symbol
-        if character == LITERAL_CLOSE_SYMBOL {
+        if character == VARIABLE_CLOSE_SYMBOL {
             // If not the end of the string
             if index + position + 1 < input_string.len() - 1 {
                 return None;
@@ -329,7 +446,7 @@ fn get_variable_name(input_string: &str, position: usize) -> Option<String> {
         }
 
         // Check if character is allowed within variable
-        if !is_variable_allowable(character) {
+        if !is_allowed_character_in_variable(character) {
             return None;
         }
     }
@@ -481,9 +598,12 @@ pub fn parse(input_string: &str) -> Result<LogicNode, usize> {
                 ));
             }
             // Do nothing on allowed characters
-            c if is_variable_allowable(c) => (),
-            FALSE_SYMBOL | TRUE_SYMBOL | NOT_SYMBOL | LITERAL_OPEN_SYMBOL
-            | LITERAL_CLOSE_SYMBOL => (),
+            c if is_allowed_character_in_variable(c) => (),
+            FALSE_SYMBOL
+            | TRUE_SYMBOL
+            | NOT_SYMBOL
+            | VARIABLE_OPEN_SYMBOL
+            | VARIABLE_CLOSE_SYMBOL => (),
 
             // Throw error on non allowed characters
             _ => {
@@ -641,5 +761,23 @@ mod tests {
             .unwrap()
             .get_value_from_variables(&hm)
             .unwrap());
+    }
+
+    #[test]
+    fn test_display() {
+        let three_way_and = parse("([a]&[b]&[c])").expect("Unable to parse three way and");
+        assert_eq!("([a]&[b]&[c])", format!("{}", three_way_and));
+
+        let three_way_and = parse("(([a]&[b])&[c])").expect("Unable to parse three way and");
+        assert_eq!("([a]&[b]&[c])", format!("{}", three_way_and));
+
+        let three_way_and = parse("([a]&([b]&[c]))").expect("Unable to parse three way and");
+        assert_eq!("([a]&[b]&[c])", format!("{}", three_way_and));
+
+        let three_way_or = parse("([a]|[b]|[c])").expect("Unable to parse three way or");
+        assert_eq!("([a]|[b]|[c])", format!("{}", three_way_or));
+
+        let formula = parse("(~[a]&~[b]&~[c])").expect("Unable to parse three way and");
+        assert_eq!("(~[a]&~[b]&~[c])", format!("{}", formula));
     }
 }

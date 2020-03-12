@@ -75,6 +75,7 @@ fn is_allowed_character_in_variable(character: u8) -> bool {
         || (character >= b'0' && character <= b'9')
         || character == b'_'
         || character == b'-'
+        || character == b'$'
 }
 
 impl LogicNode {

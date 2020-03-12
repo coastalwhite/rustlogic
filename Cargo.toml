@@ -1,6 +1,6 @@
 [package]
 name = "rustlogic"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Gijs Burghoorn <g.burghoorn@gmail.com>"]
 edition = "2018"
 description = "A Rust Library for basic parsing and handling of logical formulas"

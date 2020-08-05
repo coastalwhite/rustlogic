@@ -332,83 +332,83 @@ impl std::clone::Clone for LogicNode {
 
 /// The opening symbol of a priority group
 /// ## Default: '\('
-pub const GROUP_OPEN_SYMBOL: u8 = b'(';
+pub const DEFAULT_GROUP_OPEN_SYMBOL: &str = "(";
 /// The closing symbol of a priority group
 /// ## Default: '\)'
-pub const GROUP_CLOSE_SYMBOL: u8 = b')';
+pub const DEFAULT_GROUP_CLOSE_SYMBOL: &str = ")";
 
 /// The symbol used for the AND operation
 /// ## Default: '&'
-pub const AND_SYMBOL: u8 = b'&';
+pub const DEFAULT_AND_SYMBOL: &str = "&";
 
 /// The symbol used for the OR operation
 /// ## Default: '|'
-pub const OR_SYMBOL: u8 = b'|';
+pub const DEFAULT_OR_SYMBOL: &str = "|";
 
 /// The symbol used for the NOT operation
 /// ## Default: '~'
-pub const NOT_SYMBOL: u8 = b'~';
+pub const DEFAULT_NOT_SYMBOL: &str = "~";
 
 /// The symbol used for true state
 /// ## Default: '1'
-pub const TRUE_SYMBOL: u8 = b'1';
+pub const DEFAULT_TRUE_SYMBOL: &str = "1";
 
 /// The symbol used for false state
 /// ## Default: '0'
-pub const FALSE_SYMBOL: u8 = b'0';
+pub const DEFAULT_FALSE_SYMBOL: &str = "0";
 
 /// The opening symbol for a variable
 /// ## Default: '\['
-pub const VARIABLE_OPEN_SYMBOL: u8 = b'[';
+pub const DEFAULT_VARIABLE_OPEN_SYMBOL: &str = "[";
 
 /// The closing symbol for a variable
 /// ## Default: '\]'
-pub const VARIABLE_CLOSE_SYMBOL: u8 = b']';
+pub const DEFAULT_VARIABLE_CLOSE_SYMBOL: &str = "]";
 
 /// Function used to find the matching parenthesis given a string
 /// and a position open a opening group symbol (taking into account depth)
 /// Will return None if position given is not a bracket or
 /// if no matching bracket was found
 fn matching_group_symbol(input_string: &str, position: usize) -> Option<usize> {
-    // Fetch opening character and check if
-    // this is a opening character for a priority group
-    let opening_character = input_string.as_bytes()[position];
-    if opening_character != GROUP_OPEN_SYMBOL {
-        return None;
-    }
+    // // Fetch opening character and check if
+    // // this is a opening character for a priority group
+    // let opening_character = input_string.as_bytes()[position];
+    // if opening_character != GROUP_OPEN_SYMBOL {
+    //     return None;
+    // }
 
-    // Loop through all the characters untill a matching symbol is found
-    let mut depth: u16 = 0;
-    for (index, character) in input_string
-        .as_bytes()
-        .iter()
-        .skip(position + 1)
-        .enumerate()
-    {
-        // Shadow character to get ownership
-        let character = character.clone();
+    // // Loop through all the characters untill a matching symbol is found
+    // let mut depth: u16 = 0;
+    // for (index, character) in input_string
+    //     .as_bytes()
+    //     .iter()
+    //     .skip(position + 1)
+    //     .enumerate()
+    // {
+    //     // Shadow character to get ownership
+    //     let character = character.clone();
 
-        // If character equals closing symbol for priority group
-        if character == GROUP_CLOSE_SYMBOL {
-            // Check if not a layer deep
-            match depth {
-                // If zero layers deep,
-                // return index with correction for starting position
-                0 => return Some(index + position + 1),
+    //     // If character equals closing symbol for priority group
+    //     if character == GROUP_CLOSE_SYMBOL {
+    //         // Check if not a layer deep
+    //         match depth {
+    //             // If zero layers deep,
+    //             // return index with correction for starting position
+    //             0 => return Some(index + position + 1),
 
-                // If more than zero layers deep,
-                // go up one layer
-                _ => {
-                    depth -= 1;
-                }
-            }
+    //             // If more than zero layers deep,
+    //             // go up one layer
+    //             _ => {
+    //                 depth -= 1;
+    //             }
+    //         }
 
-        // If character equals opening symbol for priority group
-        // go one layer deeper
-        } else if character == GROUP_OPEN_SYMBOL {
-            depth += 1;
-        }
-    }
+    //     // If character equals opening symbol for priority group
+    //     // go one layer deeper
+    //     } else if character == GROUP_OPEN_SYMBOL {
+    //         depth += 1;
+    //     }
+    // }
 
     // No matching closing symbol found so return nothing
     None
@@ -417,41 +417,41 @@ fn matching_group_symbol(input_string: &str, position: usize) -> Option<usize> {
 /// Function used to fetch if a input consists of a variable,
 /// and ifso what this variable is
 fn get_variable_name(input_string: &str, position: usize) -> Option<String> {
-    // Fetch opening character and check if
-    // this is a opening character for a variable
-    let opening_character = input_string.as_bytes()[position];
-    if opening_character != VARIABLE_OPEN_SYMBOL {
-        return None;
-    }
+    // // Fetch opening character and check if
+    // // this is a opening character for a variable
+    // let opening_character = input_string.as_bytes()[position];
+    // if opening_character != VARIABLE_OPEN_SYMBOL {
+    //     return None;
+    // }
 
-    // Loop over all characters
-    for (index, character) in input_string
-        .as_bytes()
-        .iter()
-        .skip(position + 1)
-        .enumerate()
-    {
-        // Shadow character to take ownership
-        let character = character.clone();
+    // // Loop over all characters
+    // for (index, character) in input_string
+    //     .as_bytes()
+    //     .iter()
+    //     .skip(position + 1)
+    //     .enumerate()
+    // {
+    //     // Shadow character to take ownership
+    //     let character = character.clone();
 
-        // If character is the closing symbol
-        if character == VARIABLE_CLOSE_SYMBOL {
-            // If not the end of the string
-            if index + position + 1 < input_string.len() - 1 {
-                return None;
-            }
+    //     // If character is the closing symbol
+    //     if character == VARIABLE_CLOSE_SYMBOL {
+    //         // If not the end of the string
+    //         if index + position + 1 < input_string.len() - 1 {
+    //             return None;
+    //         }
 
-            // Return variable
-            return Some(String::from(
-                &input_string[(position + 1)..(index + position + 1)],
-            ));
-        }
+    //         // Return variable
+    //         return Some(String::from(
+    //             &input_string[(position + 1)..(index + position + 1)],
+    //         ));
+    //     }
 
-        // Check if character is allowed within variable
-        if !is_allowed_character_in_variable(character) {
-            return None;
-        }
-    }
+    //     // Check if character is allowed within variable
+    //     if !is_allowed_character_in_variable(character) {
+    //         return None;
+    //     }
+    // }
 
     // If no closing character was found return none
     None
@@ -505,118 +505,234 @@ fn get_variable_name(input_string: &str, position: usize) -> Option<String> {
 /// # assert!(!value);
 /// ```
 pub fn parse(input_string: &str) -> Result<LogicNode, usize> {
-    use LogicNode::*;
+    // use LogicNode::*;
 
-    // Return on empty strings
-    if input_string == "" {
-        return Err(0);
-    }
+    // // Return on empty strings
+    // if input_string == "" {
+    //     return Err(0);
+    // }
 
-    // Match absolute symbols (0/1)
-    if input_string.len() == 1 {
-        if input_string.as_bytes()[0] == FALSE_SYMBOL {
-            return Ok(False);
-        }
-        if input_string.as_bytes()[0] == TRUE_SYMBOL {
-            return Ok(True);
-        }
-    }
+    // // Match absolute symbols (0/1)
+    // if input_string.len() == 1 {
+    //     if input_string.as_bytes()[0] == FALSE_SYMBOL {
+    //         return Ok(False);
+    //     }
+    //     if input_string.as_bytes()[0] == TRUE_SYMBOL {
+    //         return Ok(True);
+    //     }
+    // }
 
-    // Match priority groups
-    match matching_group_symbol(input_string, 0) {
-        Some(end) => {
-            if end == input_string.len() - 1 {
-                return parse(&input_string[1..input_string.len() - 1]).map_err(|pos| pos + 1);
-                // Correct error for new string
-            }
-        }
-        _ => (),
-    }
+    // // Match priority groups
+    // match matching_group_symbol(input_string, 0) {
+    //     Some(end) => {
+    //         if end == input_string.len() - 1 {
+    //             return parse(&input_string[1..input_string.len() - 1]).map_err(|pos| pos + 1);
+    //             // Correct error for new string
+    //         }
+    //     }
+    //     _ => (),
+    // }
 
-    // Match variables
-    match get_variable_name(input_string, 0) {
-        Some(variable) => {
-            return Ok(Variable(variable));
-        }
-        _ => (),
-    }
+    // // Match variables
+    // match get_variable_name(input_string, 0) {
+    //     Some(variable) => {
+    //         return Ok(Variable(variable));
+    //     }
+    //     _ => (),
+    // }
 
-    // Match NOT operation
-    if input_string.as_bytes()[0] == NOT_SYMBOL {
-        // Match a absolute after / or error after
-        if input_string.len() == 2 {
-            return Ok(Not(Box::new(
-                parse(&input_string[1..]).map_err(|pos| pos + 1)?,
-            )));
-        }
+    // // Match NOT operation
+    // if input_string.as_bytes()[0] == NOT_SYMBOL {
+    //     // Match a absolute after / or error after
+    //     if input_string.len() == 2 {
+    //         return Ok(Not(Box::new(
+    //             parse(&input_string[1..]).map_err(|pos| pos + 1)?,
+    //         )));
+    //     }
 
-        // Match a priority group after
-        match matching_group_symbol(input_string, 1) {
-            Some(end) => {
-                if end == input_string.len() - 1 {
-                    return Ok(Not(Box::new(
-                        parse(&input_string[2..input_string.len() - 1]).map_err(|pos| pos + 2)?,
-                    )));
-                }
-            }
-            _ => (),
-        }
+    //     // Match a priority group after
+    //     match matching_group_symbol(input_string, 1) {
+    //         Some(end) => {
+    //             if end == input_string.len() - 1 {
+    //                 return Ok(Not(Box::new(
+    //                     parse(&input_string[2..input_string.len() - 1]).map_err(|pos| pos + 2)?,
+    //                 )));
+    //             }
+    //         }
+    //         _ => (),
+    //     }
 
-        // Match a variable after
-        match get_variable_name(input_string, 1) {
-            Some(variable) => {
-                return Ok(Not(Box::new(Variable(variable))));
-            }
-            _ => (),
-        }
-    }
+    //     // Match a variable after
+    //     match get_variable_name(input_string, 1) {
+    //         Some(variable) => {
+    //             return Ok(Not(Box::new(Variable(variable))));
+    //         }
+    //         _ => (),
+    //     }
+    // }
 
-    let mut index = 0;
-    while index < input_string.len() {
-        let character = input_string.as_bytes()[index];
+    // let mut index = 0;
+    // while index < input_string.len() {
+    //     let character = input_string.as_bytes()[index];
 
-        match character {
-            // Skip over priority groups
-            GROUP_OPEN_SYMBOL => match matching_group_symbol(input_string, index) {
-                None => return Err(index),
-                Some(position) => {
-                    index = position;
-                }
-            },
+    //     match character {
+    //         // Skip over priority groups
+    //         GROUP_OPEN_SYMBOL => match matching_group_symbol(input_string, index) {
+    //             None => return Err(index),
+    //             Some(position) => {
+    //                 index = position;
+    //             }
+    //         },
 
-            // Match and symbol
-            AND_SYMBOL => {
-                return Ok(And(
-                    Box::new(parse(&input_string[..index])?),
-                    Box::new(parse(&input_string[index + 1..]).map_err(|pos| pos + index + 1)?),
-                ));
-            }
+    //         // Match and symbol
+    //         AND_SYMBOL => {
+    //             return Ok(And(
+    //                 Box::new(parse(&input_string[..index])?),
+    //                 Box::new(parse(&input_string[index + 1..]).map_err(|pos| pos + index + 1)?),
+    //             ));
+    //         }
 
-            // Match Or Symbol
-            OR_SYMBOL => {
-                return Ok(Or(
-                    Box::new(parse(&input_string[..index])?),
-                    Box::new(parse(&input_string[index + 1..]).map_err(|pos| pos + index + 1)?),
-                ));
-            }
-            // Do nothing on allowed characters
-            c if is_allowed_character_in_variable(c) => (),
-            FALSE_SYMBOL
-            | TRUE_SYMBOL
-            | NOT_SYMBOL
-            | VARIABLE_OPEN_SYMBOL
-            | VARIABLE_CLOSE_SYMBOL => (),
+    //         // Match Or Symbol
+    //         OR_SYMBOL => {
+    //             return Ok(Or(
+    //                 Box::new(parse(&input_string[..index])?),
+    //                 Box::new(parse(&input_string[index + 1..]).map_err(|pos| pos + index + 1)?),
+    //             ));
+    //         }
+    //         // Do nothing on allowed characters
+    //         c if is_allowed_character_in_variable(c) => (),
+    //         FALSE_SYMBOL
+    //         | TRUE_SYMBOL
+    //         | NOT_SYMBOL
+    //         | VARIABLE_OPEN_SYMBOL
+    //         | VARIABLE_CLOSE_SYMBOL => (),
 
-            // Throw error on non allowed characters
-            _ => {
-                return Err(index);
-            }
-        }
-        index += 1;
-    }
+    //         // Throw error on non allowed characters
+    //         _ => {
+    //             return Err(index);
+    //         }
+    //     }
+    //     index += 1;
+    // }
 
-    // If no match was found return full length
+    // // If no match was found return full length
     return Err(input_string.len());
+}
+
+/// OperatorSymbols struct used to specify non-default operator symbols for custom_parse
+pub struct OperatorSymbols {
+    GROUP_OPEN_SYMBOL: String,
+    GROUP_CLOSE_SYMBOL: String,
+    AND_SYMBOL: String,
+    OR_SYMBOL: String,
+    NOT_SYMBOL: String,
+    TRUE_SYMBOL: String,
+    FALSE_SYMBOL: String,
+    VARIABLE_OPEN_SYMBOL: String,
+    VARIABLE_CLOSE_SYMBOL: String,
+}
+
+impl OperatorSymbols {
+    pub fn new() -> OperatorSymbols {
+        OperatorSymbols {
+            GROUP_OPEN_SYMBOL: String::from(DEFAULT_GROUP_OPEN_SYMBOL),
+            GROUP_CLOSE_SYMBOL: String::from(DEFAULT_GROUP_CLOSE_SYMBOL),
+            AND_SYMBOL: String::from(DEFAULT_AND_SYMBOL),
+            OR_SYMBOL: String::from(DEFAULT_OR_SYMBOL),
+            NOT_SYMBOL: String::from(DEFAULT_NOT_SYMBOL),
+            TRUE_SYMBOL: String::from(DEFAULT_TRUE_SYMBOL),
+            FALSE_SYMBOL: String::from(DEFAULT_FALSE_SYMBOL),
+            VARIABLE_OPEN_SYMBOL: String::from(DEFAULT_VARIABLE_OPEN_SYMBOL),
+            VARIABLE_CLOSE_SYMBOL: String::from(DEFAULT_VARIABLE_CLOSE_SYMBOL),
+        }
+    }
+
+    pub fn adjust_and(self: Self, to: &str) -> OperatorSymbols {
+        self.AND_SYMBOL = String::from(to);
+
+        self
+    }
+
+    pub fn adjust_or(self: Self, to: &str) -> OperatorSymbols {
+        self.OR_SYMBOL = String::from(to);
+
+        self
+    }
+
+    pub fn adjust_not(self: Self, to: &str) -> OperatorSymbols {
+        self.NOT_SYMBOL = String::from(to);
+
+        self
+    }
+
+    pub fn adjust_true(self: Self, to: &str) -> OperatorSymbols {
+        self.TRUE_SYMBOL = String::from(to);
+
+        self
+    }
+
+    pub fn adjust_false(self: Self, to: &str) -> OperatorSymbols {
+        self.FALSE_SYMBOL = String::from(to);
+
+        self
+    }
+
+    pub fn adjust_group_open(self: Self, to: &str) -> OperatorSymbols {
+        self.GROUP_OPEN_SYMBOL = String::from(to);
+
+        self
+    }
+
+    pub fn adjust_group_close(self: Self, to: &str) -> OperatorSymbols {
+        self.GROUP_CLOSE_SYMBOL = String::from(to);
+
+        self
+    }
+
+    pub fn adjust_variable_open(self: Self, to: &str) -> OperatorSymbols {
+        self.VARIABLE_OPEN_SYMBOL = String::from(to);
+
+        self
+    }
+
+    pub fn adjust_variable_close(self: Self, to: &str) -> OperatorSymbols {
+        self.VARIABLE_CLOSE_SYMBOL = String::from(to);
+
+        self
+    }
+
+    pub fn new_with(
+        and_symbol: &str,
+        or_symbol: &str,
+        not_symbol: &str,
+        true_symbol: &str,
+        false_symbol: &str,
+        group_open_symbol: &str,
+        group_close_symbol: &str,
+        variable_open_symbol: &str,
+        variable_close_symbol: &str,
+    ) -> OperatorSymbols {
+        OperatorSymbols {
+            GROUP_OPEN_SYMBOL: String::from(group_open_symbol),
+            GROUP_CLOSE_SYMBOL: String::from(group_close_symbol),
+            AND_SYMBOL: String::from(and_symbol),
+            OR_SYMBOL: String::from(or_symbol),
+            NOT_SYMBOL: String::from(not_symbol),
+            TRUE_SYMBOL: String::from(true_symbol),
+            FALSE_SYMBOL: String::from(false_symbol),
+            VARIABLE_OPEN_SYMBOL: String::from(variable_open_symbol),
+            VARIABLE_CLOSE_SYMBOL: String::from(variable_close_symbol),
+        }
+    }
+}
+
+/// Parsing of logic formulas with non-default operator symbols
+/// Use the [OperatorSymbols](struct.OperatorSymbols.html) Struct
+pub fn custom_parse(
+    input_string: &str,
+    operator_symbols: &OperatorSymbols,
+) -> Result<LogicNode, usize> {
+    Err(1)
 }
 
 #[cfg(test)]

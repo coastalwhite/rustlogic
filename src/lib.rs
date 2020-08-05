@@ -64,21 +64,6 @@ pub enum LogicNode {
     Variable(String),
 }
 
-/// Returns if a character is allowed within a variable name
-///
-/// For now:
-/// Check if a certain ASCII character in the form of a *u8*
-/// falls into the alphabetic range, numeric range or is - or _
-fn is_allowed_character_in_variable(character: u8) -> bool {
-    (character >= b'a' && character <= b'z')
-        || (character >= b'A' && character <= b'Z')
-        || (character >= b'0' && character <= b'9')
-        || character == b'_'
-        || character == b'-'
-        || character == b'$'
-        || character == b':'
-}
-
 impl LogicNode {
     /// Will retrieve the value of a [LogicNode](enum.LogicNode.html)
     /// given a [HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html) of variables
@@ -369,92 +354,103 @@ pub const DEFAULT_VARIABLE_CLOSE_SYMBOL: &str = "]";
 /// and a position open a opening group symbol (taking into account depth)
 /// Will return None if position given is not a bracket or
 /// if no matching bracket was found
-fn matching_group_symbol(input_string: &str, position: usize) -> Option<usize> {
-    // // Fetch opening character and check if
-    // // this is a opening character for a priority group
-    // let opening_character = input_string.as_bytes()[position];
-    // if opening_character != GROUP_OPEN_SYMBOL {
-    //     return None;
-    // }
+fn get_group_content(
+    input_string: &str,
+    position: usize,
+    operator_symbols: OperatorSymbols,
+) -> Option<String> {
+    use util::{multi_search, search};
 
-    // // Loop through all the characters untill a matching symbol is found
-    // let mut depth: u16 = 0;
-    // for (index, character) in input_string
-    //     .as_bytes()
-    //     .iter()
-    //     .skip(position + 1)
-    //     .enumerate()
-    // {
-    //     // Shadow character to get ownership
-    //     let character = character.clone();
+    let opener = operator_symbols.group_open_symbol();
+    let closer = operator_symbols.group_close_symbol();
+    let var_opener = operator_symbols.variable_open_symbol();
+    let var_closer = operator_symbols.variable_close_symbol();
 
-    //     // If character equals closing symbol for priority group
-    //     if character == GROUP_CLOSE_SYMBOL {
-    //         // Check if not a layer deep
-    //         match depth {
-    //             // If zero layers deep,
-    //             // return index with correction for starting position
-    //             0 => return Some(index + position + 1),
+    // Check whether input_string starts with opening symbol
+    if search(&input_string[position..], opener) != Some(0) {
+        return None;
+    }
 
-    //             // If more than zero layers deep,
-    //             // go up one layer
-    //             _ => {
-    //                 depth -= 1;
-    //             }
-    //         }
+    let mut depth: u16 = 0;
+    let mut search_location = position + opener.len();
 
-    //     // If character equals opening symbol for priority group
-    //     // go one layer deeper
-    //     } else if character == GROUP_OPEN_SYMBOL {
-    //         depth += 1;
-    //     }
-    // }
+    let multi_search_query = vec![opener, closer, var_opener];
+
+    // Search through string for the first occurance of a opening or closing symbol
+    let mut search_result = multi_search(&input_string[search_location..], &multi_search_query);
+    while search_result != None {
+        let unwrapped_search_result = search_result.unwrap();
+
+        let query_index = unwrapped_search_result.0;
+        let pool_index = unwrapped_search_result.1;
+
+        match query_index {
+            0 => {
+                // Opening symbol found at pool_index
+
+                depth += 1;
+                search_location += pool_index + opener.len();
+            }
+            1 => {
+                // Closing symbol found at pool_index
+
+                if depth == 0 {
+                    return Some(String::from(
+                        &input_string[position + opener.len()..pool_index + search_location],
+                    ));
+                }
+
+                depth -= 1;
+                search_location += pool_index + closer.len();
+            }
+            _ => {
+                // Variable open symbol found at pool_index
+
+                let var_closer_loc = search(
+                    &input_string[search_location + pool_index + var_opener.len()..],
+                    var_closer,
+                );
+
+                match var_closer_loc {
+                    None => {
+                        return None;
+                    }
+                    Some(var_closer_loc) => {
+                        search_location +=
+                            pool_index + var_opener.len() + var_closer_loc + var_closer.len();
+                    }
+                }
+            }
+        }
+
+        search_result = multi_search(&input_string[search_location..], &multi_search_query);
+    }
 
     // No matching closing symbol found so return nothing
     None
 }
 
-/// Function used to fetch if a input consists of a variable,
-/// and ifso what this variable is
-fn get_variable_name(input_string: &str, position: usize) -> Option<String> {
-    // // Fetch opening character and check if
-    // // this is a opening character for a variable
-    // let opening_character = input_string.as_bytes()[position];
-    // if opening_character != VARIABLE_OPEN_SYMBOL {
-    //     return None;
-    // }
+fn get_variable_content(
+    input_string: &str,
+    position: usize,
+    operator_symbols: OperatorSymbols,
+) -> Option<String> {
+    use util::search;
 
-    // // Loop over all characters
-    // for (index, character) in input_string
-    //     .as_bytes()
-    //     .iter()
-    //     .skip(position + 1)
-    //     .enumerate()
-    // {
-    //     // Shadow character to take ownership
-    //     let character = character.clone();
+    let opener = operator_symbols.variable_open_symbol();
+    let closer = operator_symbols.variable_close_symbol();
 
-    //     // If character is the closing symbol
-    //     if character == VARIABLE_CLOSE_SYMBOL {
-    //         // If not the end of the string
-    //         if index + position + 1 < input_string.len() - 1 {
-    //             return None;
-    //         }
+    if search(&input_string[position..], opener) != Some(0) {
+        return None;
+    }
 
-    //         // Return variable
-    //         return Some(String::from(
-    //             &input_string[(position + 1)..(index + position + 1)],
-    //         ));
-    //     }
+    let search_string = &input_string[position + opener.len()..];
+    let closer_location = search(search_string, closer);
 
-    //     // Check if character is allowed within variable
-    //     if !is_allowed_character_in_variable(character) {
-    //         return None;
-    //     }
-    // }
-
-    // If no closing character was found return none
-    None
+    match closer_location {
+        None => None,
+        Some(closer_location) => Some(String::from(&search_string[..closer_location])),
+    }
 }
 
 /// Parse a formula string into in [LogicNode](enum.LogicNode.html) object
@@ -620,85 +616,86 @@ pub fn parse(input_string: &str) -> Result<LogicNode, usize> {
 }
 
 /// OperatorSymbols struct used to specify non-default operator symbols for custom_parse
+#[derive(Clone)]
 pub struct OperatorSymbols {
-    GROUP_OPEN_SYMBOL: String,
-    GROUP_CLOSE_SYMBOL: String,
-    AND_SYMBOL: String,
-    OR_SYMBOL: String,
-    NOT_SYMBOL: String,
-    TRUE_SYMBOL: String,
-    FALSE_SYMBOL: String,
-    VARIABLE_OPEN_SYMBOL: String,
-    VARIABLE_CLOSE_SYMBOL: String,
+    group_open_symbol: String,
+    group_close_symbol: String,
+    and_symbol: String,
+    or_symbol: String,
+    not_symbol: String,
+    true_symbol: String,
+    false_symbol: String,
+    variable_open_symbol: String,
+    variable_close_symbol: String,
 }
 
 impl OperatorSymbols {
     pub fn new() -> OperatorSymbols {
         OperatorSymbols {
-            GROUP_OPEN_SYMBOL: String::from(DEFAULT_GROUP_OPEN_SYMBOL),
-            GROUP_CLOSE_SYMBOL: String::from(DEFAULT_GROUP_CLOSE_SYMBOL),
-            AND_SYMBOL: String::from(DEFAULT_AND_SYMBOL),
-            OR_SYMBOL: String::from(DEFAULT_OR_SYMBOL),
-            NOT_SYMBOL: String::from(DEFAULT_NOT_SYMBOL),
-            TRUE_SYMBOL: String::from(DEFAULT_TRUE_SYMBOL),
-            FALSE_SYMBOL: String::from(DEFAULT_FALSE_SYMBOL),
-            VARIABLE_OPEN_SYMBOL: String::from(DEFAULT_VARIABLE_OPEN_SYMBOL),
-            VARIABLE_CLOSE_SYMBOL: String::from(DEFAULT_VARIABLE_CLOSE_SYMBOL),
+            group_open_symbol: String::from(DEFAULT_GROUP_OPEN_SYMBOL),
+            group_close_symbol: String::from(DEFAULT_GROUP_CLOSE_SYMBOL),
+            and_symbol: String::from(DEFAULT_AND_SYMBOL),
+            or_symbol: String::from(DEFAULT_OR_SYMBOL),
+            not_symbol: String::from(DEFAULT_NOT_SYMBOL),
+            true_symbol: String::from(DEFAULT_TRUE_SYMBOL),
+            false_symbol: String::from(DEFAULT_FALSE_SYMBOL),
+            variable_open_symbol: String::from(DEFAULT_VARIABLE_OPEN_SYMBOL),
+            variable_close_symbol: String::from(DEFAULT_VARIABLE_CLOSE_SYMBOL),
         }
     }
 
     pub fn adjust_and(self: Self, to: &str) -> OperatorSymbols {
-        self.AND_SYMBOL = String::from(to);
-
-        self
+        let mut operator_clone = self.clone();
+        operator_clone.and_symbol = String::from(to);
+        operator_clone
     }
 
     pub fn adjust_or(self: Self, to: &str) -> OperatorSymbols {
-        self.OR_SYMBOL = String::from(to);
-
-        self
+        let mut operator_clone = self.clone();
+        operator_clone.or_symbol = String::from(to);
+        operator_clone
     }
 
     pub fn adjust_not(self: Self, to: &str) -> OperatorSymbols {
-        self.NOT_SYMBOL = String::from(to);
-
-        self
+        let mut operator_clone = self.clone();
+        operator_clone.not_symbol = String::from(to);
+        operator_clone
     }
 
     pub fn adjust_true(self: Self, to: &str) -> OperatorSymbols {
-        self.TRUE_SYMBOL = String::from(to);
-
-        self
+        let mut operator_clone = self.clone();
+        operator_clone.true_symbol = String::from(to);
+        operator_clone
     }
 
     pub fn adjust_false(self: Self, to: &str) -> OperatorSymbols {
-        self.FALSE_SYMBOL = String::from(to);
-
-        self
+        let mut operator_clone = self.clone();
+        operator_clone.false_symbol = String::from(to);
+        operator_clone
     }
 
     pub fn adjust_group_open(self: Self, to: &str) -> OperatorSymbols {
-        self.GROUP_OPEN_SYMBOL = String::from(to);
-
-        self
+        let mut operator_clone = self.clone();
+        operator_clone.group_open_symbol = String::from(to);
+        operator_clone
     }
 
     pub fn adjust_group_close(self: Self, to: &str) -> OperatorSymbols {
-        self.GROUP_CLOSE_SYMBOL = String::from(to);
-
-        self
+        let mut operator_clone = self.clone();
+        operator_clone.group_close_symbol = String::from(to);
+        operator_clone
     }
 
     pub fn adjust_variable_open(self: Self, to: &str) -> OperatorSymbols {
-        self.VARIABLE_OPEN_SYMBOL = String::from(to);
-
-        self
+        let mut operator_clone = self.clone();
+        operator_clone.variable_open_symbol = String::from(to);
+        operator_clone
     }
 
     pub fn adjust_variable_close(self: Self, to: &str) -> OperatorSymbols {
-        self.VARIABLE_CLOSE_SYMBOL = String::from(to);
-
-        self
+        let mut operator_clone = self.clone();
+        operator_clone.variable_close_symbol = String::from(to);
+        operator_clone
     }
 
     pub fn new_with(
@@ -713,52 +710,52 @@ impl OperatorSymbols {
         variable_close_symbol: &str,
     ) -> OperatorSymbols {
         OperatorSymbols {
-            GROUP_OPEN_SYMBOL: String::from(group_open_symbol),
-            GROUP_CLOSE_SYMBOL: String::from(group_close_symbol),
-            AND_SYMBOL: String::from(and_symbol),
-            OR_SYMBOL: String::from(or_symbol),
-            NOT_SYMBOL: String::from(not_symbol),
-            TRUE_SYMBOL: String::from(true_symbol),
-            FALSE_SYMBOL: String::from(false_symbol),
-            VARIABLE_OPEN_SYMBOL: String::from(variable_open_symbol),
-            VARIABLE_CLOSE_SYMBOL: String::from(variable_close_symbol),
+            group_open_symbol: String::from(group_open_symbol),
+            group_close_symbol: String::from(group_close_symbol),
+            and_symbol: String::from(and_symbol),
+            or_symbol: String::from(or_symbol),
+            not_symbol: String::from(not_symbol),
+            true_symbol: String::from(true_symbol),
+            false_symbol: String::from(false_symbol),
+            variable_open_symbol: String::from(variable_open_symbol),
+            variable_close_symbol: String::from(variable_close_symbol),
         }
     }
 
     pub fn and_symbol(self: &Self) -> &str {
-        &self.AND_SYMBOL[..]
+        &self.and_symbol[..]
     }
 
     pub fn or_symbol(self: &Self) -> &str {
-        &self.OR_SYMBOL[..]
+        &self.or_symbol[..]
     }
 
     pub fn not_symbol(self: &Self) -> &str {
-        &self.NOT_SYMBOL[..]
+        &self.not_symbol[..]
     }
 
     pub fn true_symbol(self: &Self) -> &str {
-        &self.TRUE_SYMBOL[..]
+        &self.true_symbol[..]
     }
 
     pub fn false_symbol(self: &Self) -> &str {
-        &self.FALSE_SYMBOL[..]
+        &self.false_symbol[..]
     }
 
     pub fn group_open_symbol(self: &Self) -> &str {
-        &self.GROUP_OPEN_SYMBOL[..]
+        &self.group_open_symbol[..]
     }
 
     pub fn group_close_symbol(self: &Self) -> &str {
-        &self.GROUP_CLOSE_SYMBOL[..]
+        &self.group_close_symbol[..]
     }
 
     pub fn variable_open_symbol(self: &Self) -> &str {
-        &self.VARIABLE_OPEN_SYMBOL[..]
+        &self.variable_open_symbol[..]
     }
 
     pub fn variable_close_symbol(self: &Self) -> &str {
-        &self.VARIABLE_CLOSE_SYMBOL[..]
+        &self.variable_close_symbol[..]
     }
 }
 

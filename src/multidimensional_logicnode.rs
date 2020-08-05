@@ -77,15 +77,15 @@ impl std::fmt::Display for MultiDimensionalLogicNode {
 
                 let joined_strings = super::util::join(
                     ands.iter().map(|x| format!("{}", x)).collect(),
-                    format!("{}", super::AND_SYMBOL as char),
+                    format!("{}", super::DEFAULT_AND_SYMBOL),
                 );
 
                 write!(
                     f,
                     "{group_open}{}{group_close}",
                     joined_strings,
-                    group_open = super::GROUP_OPEN_SYMBOL as char,
-                    group_close = super::GROUP_CLOSE_SYMBOL as char
+                    group_open = super::DEFAULT_GROUP_OPEN_SYMBOL,
+                    group_close = super::DEFAULT_GROUP_CLOSE_SYMBOL
                 )
             }
             Or(ors) => {
@@ -95,15 +95,15 @@ impl std::fmt::Display for MultiDimensionalLogicNode {
 
                 let joined_strings = super::util::join(
                     ors.iter().map(|x| format!("{}", x)).collect(),
-                    format!("{}", super::OR_SYMBOL as char),
+                    format!("{}", super::DEFAULT_OR_SYMBOL),
                 );
 
                 write!(
                     f,
                     "{group_open}{}{group_close}",
                     joined_strings,
-                    group_open = super::GROUP_OPEN_SYMBOL as char,
-                    group_close = super::GROUP_CLOSE_SYMBOL as char
+                    group_open = super::DEFAULT_GROUP_OPEN_SYMBOL,
+                    group_close = super::DEFAULT_GROUP_CLOSE_SYMBOL
                 )
             }
 
@@ -111,19 +111,19 @@ impl std::fmt::Display for MultiDimensionalLogicNode {
                 f,
                 "{not_symbol}{}",
                 child,
-                not_symbol = super::NOT_SYMBOL as char
+                not_symbol = super::DEFAULT_NOT_SYMBOL
             ),
 
-            True => write!(f, "{}", super::TRUE_SYMBOL as char),
+            True => write!(f, "{}", super::DEFAULT_TRUE_SYMBOL),
 
-            False => write!(f, "{}", super::FALSE_SYMBOL as char),
+            False => write!(f, "{}", super::DEFAULT_FALSE_SYMBOL),
 
             Variable(var) => write!(
                 f,
                 "{var_open}{}{var_close}",
                 var,
-                var_open = super::VARIABLE_OPEN_SYMBOL as char,
-                var_close = super::VARIABLE_CLOSE_SYMBOL as char
+                var_open = super::DEFAULT_VARIABLE_OPEN_SYMBOL,
+                var_close = super::DEFAULT_VARIABLE_CLOSE_SYMBOL
             ),
         }
     }

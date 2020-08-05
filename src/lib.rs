@@ -724,6 +724,42 @@ impl OperatorSymbols {
             VARIABLE_CLOSE_SYMBOL: String::from(variable_close_symbol),
         }
     }
+
+    pub fn and_symbol(self: &Self) -> &str {
+        &self.AND_SYMBOL[..]
+    }
+
+    pub fn or_symbol(self: &Self) -> &str {
+        &self.OR_SYMBOL[..]
+    }
+
+    pub fn not_symbol(self: &Self) -> &str {
+        &self.NOT_SYMBOL[..]
+    }
+
+    pub fn true_symbol(self: &Self) -> &str {
+        &self.TRUE_SYMBOL[..]
+    }
+
+    pub fn false_symbol(self: &Self) -> &str {
+        &self.FALSE_SYMBOL[..]
+    }
+
+    pub fn group_open_symbol(self: &Self) -> &str {
+        &self.GROUP_OPEN_SYMBOL[..]
+    }
+
+    pub fn group_close_symbol(self: &Self) -> &str {
+        &self.GROUP_CLOSE_SYMBOL[..]
+    }
+
+    pub fn variable_open_symbol(self: &Self) -> &str {
+        &self.VARIABLE_OPEN_SYMBOL[..]
+    }
+
+    pub fn variable_close_symbol(self: &Self) -> &str {
+        &self.VARIABLE_CLOSE_SYMBOL[..]
+    }
 }
 
 /// Parsing of logic formulas with non-default operator symbols

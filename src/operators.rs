@@ -1,22 +1,71 @@
+//! Contains all the functionality to adjust operators when parsing
+
 macro_rules! operator_getset {
     ($setter:ident, $getter:ident) => {
-        /// Setter used to adjust operator within [OperatorSymbols](struct.OperatorSymbols.html)
-        pub fn $setter(self: Self, to: &str) -> OperatorSymbols {
+        /// Setter used to adjust operator within [OperatorSet](struct.OperatorSet.html)
+        pub fn $setter(self: Self, to: &str) -> OperatorSet {
             let mut operator_clone = self.clone();
             operator_clone.$getter = String::from(to);
             operator_clone
         }
 
-        /// Getter used to fetch operator within [OperatorSymbols](struct.OperatorSymbols.html)
+        /// Getter used to fetch operator within [OperatorSet](struct.OperatorSet.html)
         pub fn $getter(self: &Self) -> &str {
             &self.$getter[..]
         }
     };
 }
 
-/// OperatorSymbols struct used to specify non-default operator symbols for custom_parse
+/// OperatorSet struct used to specify non-default operator symbols for [custom_parse](../../fn.custom_parse.html) function
+///
+/// # Examples
+/// ## Using the common sets
+/// ```
+/// use rustlogic::operators;
+///
+/// let mathematical_version = operators::common_sets::mathematical();
+///
+/// // We create a parsed logic node
+/// let parse_result = rustlogic::custom_parse("(![A]*[B])+[C]", &mathematical_version);
+/// # assert!(parse_result.is_some());
+///
+/// // -- snipp
+/// ```
+/// For all the common sets [click here](common_sets/index.html)
+///
+/// ## Defining your own sets
+/// ```
+/// use rustlogic::operators::OperatorSet;
+///
+/// // Create a operator set with words
+/// let worded_version = OperatorSet::new(
+///     " AND ", " OR ", "NOT ", "TRUE", "FALSE", "(", ")", "$[", "]",
+/// );
+///
+/// // Attempt to parse a logical string
+/// let parse_result = rustlogic::custom_parse("(NOT $[A] AND $[B]) OR $[C]", &worded_version);
+/// # assert!(parse_result.is_some());
+///
+/// // -- snipp
+/// ```
+///
+/// ## Adjusting a pre-existing set
+/// ```
+/// use rustlogic::operators;
+///
+/// // Adjust the group brackets to be curly
+/// let curly_bracket_groups = operators::common_sets::default()
+///      .adjust_group_open("{")
+///      .adjust_group_close("}");
+///
+/// // We create a parsed logic node
+/// let parse_result = rustlogic::custom_parse("{~[A]&[B]}|[C]", &curly_bracket_groups);
+/// # assert!(parse_result.is_some());
+///
+/// // -- snipp
+/// ```
 #[derive(Clone)]
-pub struct OperatorSymbols {
+pub struct OperatorSet {
     group_open: String,
     group_close: String,
     and: String,
@@ -28,7 +77,7 @@ pub struct OperatorSymbols {
     variable_close: String,
 }
 
-impl OperatorSymbols {
+impl OperatorSet {
     pub fn new(
         and: &str,
         or: &str,
@@ -39,8 +88,8 @@ impl OperatorSymbols {
         group_close: &str,
         variable_open: &str,
         variable_close: &str,
-    ) -> OperatorSymbols {
-        OperatorSymbols {
+    ) -> OperatorSet {
+        OperatorSet {
             group_open: String::from(group_open),
             group_close: String::from(group_close),
             and: String::from(and),
@@ -64,19 +113,36 @@ impl OperatorSymbols {
     operator_getset!(adjust_variable_close, variable_close);
 }
 
+/// Some common operator sets used
 pub mod common_sets {
-    use super::OperatorSymbols;
-    pub fn default() -> OperatorSymbols {
-        OperatorSymbols::new("&", "|", "~", "1", "0", "(", ")", "[", "]")
+    use super::OperatorSet;
+
+    /// Returns the default set of operators used with the [parse](../../fn.parse.html) function
+    ///
+    /// This includes "&", "|" and "~" as logical functions,
+    /// "1" and "0" as absolute values, "(" and ")" as group opener and closer
+    /// and "[" and "]" as variable opener and closer.
+    pub fn default() -> OperatorSet {
+        OperatorSet::new("&", "|", "~", "1", "0", "(", ")", "[", "]")
     }
 
-    pub fn worded() -> OperatorSymbols {
-        OperatorSymbols::new(
+    /// Returns an english worded set of operators
+    ///
+    /// This includes " AND ", " OR " and "NOT " as logical functions,
+    /// "TRUE" and "FALSE" as absolute values, "(" and ")" as group opener and closer
+    /// and "$[" and "]" as variable opener and closer.
+    pub fn worded() -> OperatorSet {
+        OperatorSet::new(
             " AND ", " OR ", "NOT ", "TRUE", "FALSE", "(", ")", "$[", "]",
         )
     }
 
-    pub fn mathetical() -> OperatorSymbols {
-        OperatorSymbols::new("*", "+", "!", "1", "0", "(", ")", "[", "]")
+    /// Returns a mathematical set of operators
+    ///
+    /// This includes "*", "+" and "!" as logical functions,
+    /// "1" and "0" as absolute values, "(" and ")" as group opener and closer
+    /// and "[" and "]" as variable opener and closer.
+    pub fn mathematical() -> OperatorSet {
+        OperatorSet::new("*", "+", "!", "1", "0", "(", ")", "[", "]")
     }
 }

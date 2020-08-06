@@ -41,7 +41,7 @@ mod multidimensional_logicnode;
 pub mod operators;
 mod util;
 
-use operators::OperatorSymbols;
+use operators::OperatorSet;
 use std::collections::HashMap;
 
 /// An Enum of all the possible states of a head of a logical formula
@@ -324,14 +324,14 @@ impl std::clone::Clone for LogicNode {
 fn get_group_content(
     input_string: &str,
     position: usize,
-    operator_symbols: &OperatorSymbols,
+    operator_set: &OperatorSet,
 ) -> Option<String> {
     use util::{multi_search, search};
 
-    let opener = operator_symbols.group_open();
-    let closer = operator_symbols.group_close();
-    let var_opener = operator_symbols.variable_open();
-    let var_closer = operator_symbols.variable_close();
+    let opener = operator_set.group_open();
+    let closer = operator_set.group_close();
+    let var_opener = operator_set.variable_open();
+    let var_closer = operator_set.variable_close();
 
     // Check whether input_string starts with opening symbol
     if search(&input_string[position..], opener) != Some(0) {
@@ -344,9 +344,7 @@ fn get_group_content(
     let multi_search_query = vec![opener, closer, var_opener];
 
     // Search through string for the first occurance of a opening or closing symbol
-    println!(" Group Operator multisearch ");
     let mut search_result = multi_search(&input_string[search_location..], &multi_search_query);
-    println!(" - End - \n\n");
     while search_result != None {
         let unwrapped_search_result = search_result.unwrap();
 
@@ -392,9 +390,7 @@ fn get_group_content(
             }
         }
 
-        println!(" Group Operator multisearch ");
         search_result = multi_search(&input_string[search_location..], &multi_search_query);
-        println!(" - End - \n\n");
     }
 
     // No matching closing symbol found so return nothing
@@ -404,12 +400,12 @@ fn get_group_content(
 fn get_variable_content(
     input_string: &str,
     position: usize,
-    operator_symbols: &OperatorSymbols,
+    operator_set: &OperatorSet,
 ) -> Option<String> {
     use util::search;
 
-    let opener = operator_symbols.variable_open();
-    let closer = operator_symbols.variable_close();
+    let opener = operator_set.variable_open();
+    let closer = operator_set.variable_close();
 
     if search(&input_string[position..], opener) != Some(0) {
         return None;
@@ -421,6 +417,205 @@ fn get_variable_content(
     match closer_location {
         None => None,
         Some(closer_location) => Some(String::from(&search_string[..closer_location])),
+    }
+}
+
+fn easy_parse(input_string: &str, operator_set: &OperatorSet) -> Option<Option<LogicNode>> {
+    use LogicNode::*;
+
+    if input_string.is_empty() {
+        return Some(None);
+    }
+
+    if input_string == operator_set.true_symbol() {
+        return Some(Some(True));
+    }
+
+    if input_string == operator_set.false_symbol() {
+        return Some(Some(False));
+    }
+
+    let variable_content_option = get_variable_content(input_string, 0, operator_set);
+    if variable_content_option.is_some() {
+        let variable_content = variable_content_option.unwrap();
+
+        if variable_content.len()
+            == input_string.len()
+                - operator_set.variable_open().len()
+                - operator_set.variable_close().len()
+        {
+            return Some(Some(Variable(variable_content)));
+        }
+    }
+
+    let group_content_option = get_group_content(input_string, 0, operator_set);
+    if group_content_option.is_some() {
+        let group_content = group_content_option.unwrap();
+
+        if group_content.len()
+            == input_string.len()
+                - operator_set.group_open().len()
+                - operator_set.group_close().len()
+        {
+            return Some(custom_parse(&group_content[..], operator_set));
+        }
+    }
+
+    None
+}
+
+fn infix_parse(
+    input_string: &str,
+    position: usize,
+    operator_set: &OperatorSet,
+) -> Option<LogicNode> {
+    let symbol = if input_string[position..].starts_with(operator_set.and()) {
+        operator_set.and()
+    } else if input_string[position..].starts_with(operator_set.or()) {
+        operator_set.or()
+    } else {
+        return None;
+    };
+
+    let left = custom_parse(&input_string[..position], operator_set);
+    let right = custom_parse(&input_string[position + symbol.len()..], operator_set);
+
+    if left.is_none() || right.is_none() {
+        return None;
+    }
+
+    let left = left.unwrap();
+    let right = right.unwrap();
+
+    Some(
+        match input_string[position..].starts_with(operator_set.and()) {
+            true => LogicNode::And(Box::new(left), Box::new(right)),
+            false => LogicNode::Or(Box::new(left), Box::new(right)),
+        },
+    )
+}
+
+/// Parsing of logic formulas with non-default operator symbols
+/// Use the [OperatorSet](struct.OperatorSet.html) Struct
+///
+/// # Examples
+/// ## Using a worded set
+/// ```
+/// use rustlogic::operators;
+///
+/// // Define the set
+/// let operator_set = operators::common_sets::worded();
+///
+/// let parsed = rustlogic::custom_parse("(NOT $[A] AND $[B]) OR $[C]", &operator_set);
+/// # assert!(parsed.is_some());
+///
+/// // -- snipp
+/// ```
+///
+/// ## Having a customized operator set
+/// ```
+/// use rustlogic::operators;
+///
+/// // This will be our new symbol for the AND logical function
+/// let new_and_operator = "<AND>";
+///
+/// // Then we take the default set and adjust the AND symbol
+/// let custom_operator_set = operators::common_sets::default()
+///     .adjust_and(new_and_operator);
+///
+/// // Now we can use this set to parse logical strings
+/// let parsed = rustlogic::custom_parse("([A]<AND>[B])|[C]", &custom_operator_set);
+/// # assert!(parsed.is_some());
+///
+/// // -- snipp
+/// ```
+///
+/// ## Evaluating a custom logical string
+/// ```
+/// use rustlogic::operators;
+///
+/// // Define the set
+/// let operator_set = operators::common_sets::worded();
+///
+/// let parsed = rustlogic::custom_parse("(NOT FALSE AND TRUE) OR FALSE", &operator_set);
+/// # assert!(parsed.is_some());
+/// # assert!(parsed.unwrap().get_value().is_ok());
+///
+/// /// Now contains the value of the logical expression
+/// # let parsed = rustlogic::custom_parse("(NOT FALSE AND TRUE) OR FALSE", &operator_set);
+/// let value = parsed.unwrap().get_value().unwrap();
+/// # assert!(value);
+/// ```
+///
+/// ## Evaluating a custom logical string with variables
+/// ```
+/// use rustlogic::operators;
+/// use std::collections::HashMap;
+///
+/// // Define the set
+/// let operator_set = operators::common_sets::worded();
+///
+/// let parsed = rustlogic::custom_parse("(NOT $[A] AND $[B]) OR $[C]", &operator_set);
+/// # assert!(parsed.is_some());
+///
+/// // We assign the variables to their values
+/// let mut hm = HashMap::new();
+/// hm.insert("A", false);
+/// hm.insert("B", true);
+/// hm.insert("C", false);
+/// # assert!(parsed.unwrap().get_value_from_variables(&hm).is_ok());
+///
+/// /// Now contains the value of the logical expression
+/// # let parsed = rustlogic::custom_parse("(NOT $[A] AND $[B]) OR $[C]", &operator_set);
+/// let value = parsed.unwrap().get_value_from_variables(&hm).unwrap();
+/// # assert!(value);
+/// ```
+pub fn custom_parse(input_string: &str, operator_set: &OperatorSet) -> Option<LogicNode> {
+    use LogicNode::*;
+
+    let easy_parse_option = easy_parse(input_string, operator_set);
+    if easy_parse_option.is_some() {
+        return easy_parse_option.unwrap();
+    }
+
+    if input_string.starts_with(operator_set.not()) {
+        let easy_parse_option = easy_parse(&input_string[operator_set.not().len()..], operator_set);
+        if easy_parse_option.is_some() {
+            return match easy_parse_option.unwrap() {
+                None => None,
+                Some(x) => Some(Not(Box::new(x))),
+            };
+        }
+    }
+
+    use util::multi_search;
+
+    let multi_search_query = vec![
+        operator_set.group_open(),
+        operator_set.and(),
+        operator_set.or(),
+    ];
+    let multi_search = multi_search(input_string, &multi_search_query);
+
+    match multi_search {
+        None => None,
+        Some((0, pool_index)) => {
+            let group_content = get_group_content(input_string, pool_index, operator_set);
+
+            if group_content.is_none() {
+                return None;
+            }
+
+            infix_parse(
+                input_string,
+                pool_index
+                    + group_content.unwrap().len()
+                    + operator_set.group_open().len()
+                    + operator_set.group_close().len(),
+                operator_set,
+            )
+        }
+        Some((_, pool_index)) => infix_parse(input_string, pool_index, operator_set),
     }
 }
 
@@ -472,143 +667,14 @@ fn get_variable_content(
 /// # assert!(!value);
 /// ```
 pub fn parse(input_string: &str) -> Result<LogicNode, usize> {
-    let operator_symbols = operators::common_sets::default();
-    let parse_result = custom_parse(input_string, &operator_symbols);
+    let operator_set = operators::common_sets::default();
+    let parse_result = custom_parse(input_string, &operator_set);
 
     if parse_result.is_some() {
         return Ok(parse_result.unwrap());
     }
 
     return Err(input_string.len());
-}
-
-fn easy_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> Option<Option<LogicNode>> {
-    use LogicNode::*;
-
-    if input_string.is_empty() {
-        return Some(None);
-    }
-
-    if input_string == operator_symbols.true_symbol() {
-        return Some(Some(True));
-    }
-
-    if input_string == operator_symbols.false_symbol() {
-        return Some(Some(False));
-    }
-
-    let variable_content_option = get_variable_content(input_string, 0, operator_symbols);
-    if variable_content_option.is_some() {
-        let variable_content = variable_content_option.unwrap();
-
-        if variable_content.len()
-            == input_string.len()
-                - operator_symbols.variable_open().len()
-                - operator_symbols.variable_close().len()
-        {
-            return Some(Some(Variable(variable_content)));
-        }
-    }
-
-    let group_content_option = get_group_content(input_string, 0, operator_symbols);
-    if group_content_option.is_some() {
-        let group_content = group_content_option.unwrap();
-
-        if group_content.len()
-            == input_string.len()
-                - operator_symbols.group_open().len()
-                - operator_symbols.group_close().len()
-        {
-            return Some(custom_parse(&group_content[..], operator_symbols));
-        }
-    }
-
-    None
-}
-
-fn infix_parse(
-    input_string: &str,
-    position: usize,
-    operator_symbols: &OperatorSymbols,
-) -> Option<LogicNode> {
-    let symbol = if input_string[position..].starts_with(operator_symbols.and()) {
-        operator_symbols.and()
-    } else if input_string[position..].starts_with(operator_symbols.or()) {
-        operator_symbols.or()
-    } else {
-        return None;
-    };
-
-    let left = custom_parse(&input_string[..position], operator_symbols);
-    let right = custom_parse(&input_string[position + symbol.len()..], operator_symbols);
-
-    if left.is_none() || right.is_none() {
-        return None;
-    }
-
-    let left = left.unwrap();
-    let right = right.unwrap();
-
-    Some(
-        match input_string[position..].starts_with(operator_symbols.and()) {
-            true => LogicNode::And(Box::new(left), Box::new(right)),
-            false => LogicNode::Or(Box::new(left), Box::new(right)),
-        },
-    )
-}
-
-/// Parsing of logic formulas with non-default operator symbols
-/// Use the [OperatorSymbols](struct.OperatorSymbols.html) Struct
-pub fn custom_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> Option<LogicNode> {
-    use LogicNode::*;
-
-    let easy_parse_option = easy_parse(input_string, operator_symbols);
-    if easy_parse_option.is_some() {
-        return easy_parse_option.unwrap();
-    }
-
-    if input_string.starts_with(operator_symbols.not()) {
-        let easy_parse_option = easy_parse(
-            &input_string[operator_symbols.not().len()..],
-            operator_symbols,
-        );
-        if easy_parse_option.is_some() {
-            return match easy_parse_option.unwrap() {
-                None => None,
-                Some(x) => Some(Not(Box::new(x))),
-            };
-        }
-    }
-
-    use util::multi_search;
-
-    let multi_search_query = vec![
-        operator_symbols.group_open(),
-        operator_symbols.and(),
-        operator_symbols.or(),
-    ];
-    let multi_search = multi_search(input_string, &multi_search_query);
-
-    match multi_search {
-        None => None,
-        Some((0, pool_index)) => {
-            let group_content = get_group_content(input_string, pool_index, operator_symbols);
-
-            if group_content.is_none() {
-                return None;
-            }
-
-            infix_parse(
-                input_string,
-                pool_index
-                    + group_content.unwrap().len()
-                    + operator_symbols.group_open().len()
-                    + operator_symbols.group_close().len(),
-                operator_symbols,
-            )
-        }
-        Some((_, pool_index)) => infix_parse(input_string, pool_index, operator_symbols),
-    }
 }
 
 #[cfg(test)]
@@ -701,8 +767,8 @@ mod tests {
     }
 
     #[test]
-    fn test_operator_symbols() {
-        let operator_symbols = operators::common_sets::worded();
+    fn test_operator_set() {
+        let operator_set = operators::common_sets::worded();
 
         let mut hm = HashMap::new();
 
@@ -710,26 +776,20 @@ mod tests {
         hm.insert("B", true);
         hm.insert("C", false);
 
-        assert!(
-            custom_parse("(NOT $[A] AND $[B]) OR $[C]", &operator_symbols)
-                .unwrap()
-                .get_value_from_variables(&hm)
-                .unwrap()
-        );
+        assert!(custom_parse("(NOT $[A] AND $[B]) OR $[C]", &operator_set)
+            .unwrap()
+            .get_value_from_variables(&hm)
+            .unwrap());
 
-        assert!(
-            custom_parse("($[A] AND $[B]) OR NOT $[C]", &operator_symbols)
-                .unwrap()
-                .get_value_from_variables(&hm)
-                .unwrap()
-        );
+        assert!(custom_parse("($[A] AND $[B]) OR NOT $[C]", &operator_set)
+            .unwrap()
+            .get_value_from_variables(&hm)
+            .unwrap());
 
-        assert!(
-            !custom_parse("($[A] AND NOT $[B]) OR $[C]", &operator_symbols)
-                .unwrap()
-                .get_value_from_variables(&hm)
-                .unwrap()
-        );
+        assert!(!custom_parse("($[A] AND NOT $[B]) OR $[C]", &operator_set)
+            .unwrap()
+            .get_value_from_variables(&hm)
+            .unwrap());
     }
 
     #[test]

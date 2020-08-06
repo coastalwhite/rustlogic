@@ -38,7 +38,7 @@ pub fn search(pool: &str, spear: &str) -> Option<usize> {
 pub fn multi_search(pool: &str, spears: &Vec<&str>) -> Option<(usize, usize)> {
     for (spear_index, spear) in spears.iter().enumerate() {
         if pool.len() < spear.len() || spear.is_empty() {
-            return None;
+            continue;
         }
 
         if pool.chars().next() == spear.chars().next() && pool[1..].starts_with(&spear[1..]) {
@@ -46,8 +46,36 @@ pub fn multi_search(pool: &str, spears: &Vec<&str>) -> Option<(usize, usize)> {
         }
     }
 
+    println!("pool: '{}' ({} characters)", pool, pool.len());
+    if pool.len() == 1 {
+        return None;
+    }
+
     match multi_search(&pool[1..], spears) {
         Some((spear_index, x)) => Some((spear_index, x + 1)),
         None => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ut_search() {
+        assert_eq!(search("hi", ""), None);
+        assert_eq!(search("Hello World!", "World"), Some(6));
+        assert_eq!(search("Hello Wrld!", "World"), None);
+    }
+
+    #[test]
+    fn ut_multi_search() {
+        let query = vec!["World", "Boy"];
+
+        assert_eq!(multi_search("hi", &query), None);
+        assert_eq!(multi_search("Hello World!", &query), Some((0, 6)));
+        assert_eq!(multi_search("Hello Wrld!", &query), None);
+
+        assert_eq!(multi_search("Hello Boy!", &query), Some((1, 6)));
     }
 }

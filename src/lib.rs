@@ -357,7 +357,7 @@ pub const DEFAULT_VARIABLE_CLOSE_SYMBOL: &str = "]";
 fn get_group_content(
     input_string: &str,
     position: usize,
-    operator_symbols: OperatorSymbols,
+    operator_symbols: &OperatorSymbols,
 ) -> Option<String> {
     use util::{multi_search, search};
 
@@ -377,7 +377,9 @@ fn get_group_content(
     let multi_search_query = vec![opener, closer, var_opener];
 
     // Search through string for the first occurance of a opening or closing symbol
+    println!(" Group Operator multisearch ");
     let mut search_result = multi_search(&input_string[search_location..], &multi_search_query);
+    println!(" - End - \n\n");
     while search_result != None {
         let unwrapped_search_result = search_result.unwrap();
 
@@ -423,7 +425,9 @@ fn get_group_content(
             }
         }
 
+        println!(" Group Operator multisearch ");
         search_result = multi_search(&input_string[search_location..], &multi_search_query);
+        println!(" - End - \n\n");
     }
 
     // No matching closing symbol found so return nothing
@@ -433,7 +437,7 @@ fn get_group_content(
 fn get_variable_content(
     input_string: &str,
     position: usize,
-    operator_symbols: OperatorSymbols,
+    operator_symbols: &OperatorSymbols,
 ) -> Option<String> {
     use util::search;
 
@@ -501,117 +505,13 @@ fn get_variable_content(
 /// # assert!(!value);
 /// ```
 pub fn parse(input_string: &str) -> Result<LogicNode, usize> {
-    // use LogicNode::*;
+    let operator_symbols = OperatorSymbols::new();
+    let parse_result = custom_parse(input_string, &operator_symbols);
 
-    // // Return on empty strings
-    // if input_string == "" {
-    //     return Err(0);
-    // }
+    if parse_result.is_some() {
+        return Ok(parse_result.unwrap());
+    }
 
-    // // Match absolute symbols (0/1)
-    // if input_string.len() == 1 {
-    //     if input_string.as_bytes()[0] == FALSE_SYMBOL {
-    //         return Ok(False);
-    //     }
-    //     if input_string.as_bytes()[0] == TRUE_SYMBOL {
-    //         return Ok(True);
-    //     }
-    // }
-
-    // // Match priority groups
-    // match matching_group_symbol(input_string, 0) {
-    //     Some(end) => {
-    //         if end == input_string.len() - 1 {
-    //             return parse(&input_string[1..input_string.len() - 1]).map_err(|pos| pos + 1);
-    //             // Correct error for new string
-    //         }
-    //     }
-    //     _ => (),
-    // }
-
-    // // Match variables
-    // match get_variable_name(input_string, 0) {
-    //     Some(variable) => {
-    //         return Ok(Variable(variable));
-    //     }
-    //     _ => (),
-    // }
-
-    // // Match NOT operation
-    // if input_string.as_bytes()[0] == NOT_SYMBOL {
-    //     // Match a absolute after / or error after
-    //     if input_string.len() == 2 {
-    //         return Ok(Not(Box::new(
-    //             parse(&input_string[1..]).map_err(|pos| pos + 1)?,
-    //         )));
-    //     }
-
-    //     // Match a priority group after
-    //     match matching_group_symbol(input_string, 1) {
-    //         Some(end) => {
-    //             if end == input_string.len() - 1 {
-    //                 return Ok(Not(Box::new(
-    //                     parse(&input_string[2..input_string.len() - 1]).map_err(|pos| pos + 2)?,
-    //                 )));
-    //             }
-    //         }
-    //         _ => (),
-    //     }
-
-    //     // Match a variable after
-    //     match get_variable_name(input_string, 1) {
-    //         Some(variable) => {
-    //             return Ok(Not(Box::new(Variable(variable))));
-    //         }
-    //         _ => (),
-    //     }
-    // }
-
-    // let mut index = 0;
-    // while index < input_string.len() {
-    //     let character = input_string.as_bytes()[index];
-
-    //     match character {
-    //         // Skip over priority groups
-    //         GROUP_OPEN_SYMBOL => match matching_group_symbol(input_string, index) {
-    //             None => return Err(index),
-    //             Some(position) => {
-    //                 index = position;
-    //             }
-    //         },
-
-    //         // Match and symbol
-    //         AND_SYMBOL => {
-    //             return Ok(And(
-    //                 Box::new(parse(&input_string[..index])?),
-    //                 Box::new(parse(&input_string[index + 1..]).map_err(|pos| pos + index + 1)?),
-    //             ));
-    //         }
-
-    //         // Match Or Symbol
-    //         OR_SYMBOL => {
-    //             return Ok(Or(
-    //                 Box::new(parse(&input_string[..index])?),
-    //                 Box::new(parse(&input_string[index + 1..]).map_err(|pos| pos + index + 1)?),
-    //             ));
-    //         }
-    //         // Do nothing on allowed characters
-    //         c if is_allowed_character_in_variable(c) => (),
-    //         FALSE_SYMBOL
-    //         | TRUE_SYMBOL
-    //         | NOT_SYMBOL
-    //         | VARIABLE_OPEN_SYMBOL
-    //         | VARIABLE_CLOSE_SYMBOL => (),
-
-    //         // Throw error on non allowed characters
-    //         _ => {
-    //             return Err(index);
-    //         }
-    //     }
-    //     index += 1;
-    // }
-
-    // // If no match was found return full length
     return Err(input_string.len());
 }
 
@@ -759,18 +659,223 @@ impl OperatorSymbols {
     }
 }
 
+fn easy_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> Option<Option<LogicNode>> {
+    use LogicNode::*;
+
+    if input_string.is_empty() {
+        return Some(None);
+    }
+
+    if input_string == operator_symbols.true_symbol() {
+        return Some(Some(True));
+    }
+
+    if input_string == operator_symbols.false_symbol() {
+        return Some(Some(False));
+    }
+
+    let variable_content_option = get_variable_content(input_string, 0, operator_symbols);
+    if variable_content_option.is_some() {
+        let variable_content = variable_content_option.unwrap();
+
+        if variable_content.len()
+            == input_string.len()
+                - operator_symbols.variable_open_symbol().len()
+                - operator_symbols.variable_close_symbol().len()
+        {
+            return Some(Some(Variable(variable_content)));
+        }
+    }
+
+    let group_content_option = get_group_content(input_string, 0, operator_symbols);
+    if group_content_option.is_some() {
+        let group_content = group_content_option.unwrap();
+
+        if group_content.len()
+            == input_string.len()
+                - operator_symbols.group_open_symbol().len()
+                - operator_symbols.group_close_symbol().len()
+        {
+            return Some(custom_parse(&group_content[..], operator_symbols));
+        }
+    }
+
+    None
+}
+
+fn infix_parse(
+    input_string: &str,
+    position: usize,
+    operator_symbols: &OperatorSymbols,
+) -> Option<LogicNode> {
+    let symbol = if input_string[position..].starts_with(operator_symbols.and_symbol()) {
+        operator_symbols.and_symbol()
+    } else if input_string[position..].starts_with(operator_symbols.or_symbol()) {
+        operator_symbols.or_symbol()
+    } else {
+        return None;
+    };
+
+    let left = custom_parse(&input_string[..position], operator_symbols);
+    let right = custom_parse(&input_string[position + symbol.len()..], operator_symbols);
+
+    if left.is_none() || right.is_none() {
+        return None;
+    }
+
+    let left = left.unwrap();
+    let right = right.unwrap();
+
+    Some(
+        match input_string[position..].starts_with(operator_symbols.and_symbol()) {
+            true => LogicNode::And(Box::new(left), Box::new(right)),
+            false => LogicNode::Or(Box::new(left), Box::new(right)),
+        },
+    )
+}
+
 /// Parsing of logic formulas with non-default operator symbols
 /// Use the [OperatorSymbols](struct.OperatorSymbols.html) Struct
-pub fn custom_parse(
-    input_string: &str,
-    operator_symbols: &OperatorSymbols,
-) -> Result<LogicNode, usize> {
-    Err(1)
+pub fn custom_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> Option<LogicNode> {
+    use LogicNode::*;
+
+    let easy_parse_option = easy_parse(input_string, operator_symbols);
+    if easy_parse_option.is_some() {
+        return easy_parse_option.unwrap();
+    }
+
+    if input_string.starts_with(operator_symbols.not_symbol()) {
+        let easy_parse_option = easy_parse(
+            &input_string[operator_symbols.not_symbol().len()..],
+            operator_symbols,
+        );
+        if easy_parse_option.is_some() {
+            return match easy_parse_option.unwrap() {
+                None => None,
+                Some(x) => Some(Not(Box::new(x))),
+            };
+        }
+    }
+
+    use util::multi_search;
+
+    let multi_search_query = vec![
+        operator_symbols.group_open_symbol(),
+        operator_symbols.and_symbol(),
+        operator_symbols.or_symbol(),
+    ];
+    let multi_search = multi_search(input_string, &multi_search_query);
+
+    match multi_search {
+        None => None,
+        Some((0, pool_index)) => {
+            let group_content = get_group_content(input_string, pool_index, operator_symbols);
+
+            if group_content.is_none() {
+                return None;
+            }
+
+            infix_parse(
+                input_string,
+                pool_index
+                    + group_content.unwrap().len()
+                    + operator_symbols.group_open_symbol().len()
+                    + operator_symbols.group_close_symbol().len(),
+                operator_symbols,
+            )
+        }
+        Some((query_index, pool_index)) => infix_parse(input_string, pool_index, operator_symbols),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_get_group_content() {
+        let default_op = OperatorSymbols::new();
+
+        assert_eq!(
+            get_group_content("(Hi)", 0, &default_op),
+            Some(String::from("Hi"))
+        );
+
+        assert_eq!(
+            get_group_content("  (before(inbetween(in)[var)test])after)", 2, &default_op),
+            Some(String::from("before(inbetween(in)[var)test])after"))
+        );
+
+        let non_default_op = OperatorSymbols::new()
+            .adjust_group_open(" { ")
+            .adjust_group_close(" } ");
+
+        assert_eq!(
+            get_group_content(
+                " { before { inbetween { in } [var } test] } after } ",
+                0,
+                &non_default_op
+            ),
+            Some(String::from(
+                "before { inbetween { in } [var } test] } after"
+            ))
+        );
+
+        assert_eq!(
+            get_group_content(
+                "before { inbetween { in } [var } test] } after } ",
+                0,
+                &non_default_op
+            ),
+            None
+        );
+
+        assert_eq!(
+            get_group_content(
+                " { before { inbetween { in } [var } test] } after",
+                0,
+                &non_default_op
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn test_get_variable_content() {
+        let default_op = OperatorSymbols::new();
+
+        assert_eq!(
+            get_variable_content("[Hi]", 0, &default_op),
+            Some(String::from("Hi"))
+        );
+
+        assert_eq!(
+            get_variable_content("  [before(inbetween(in)[var)test])after]", 2, &default_op),
+            Some(String::from("before(inbetween(in)[var)test"))
+        );
+
+        let non_default_op = OperatorSymbols::new()
+            .adjust_variable_open(" { ")
+            .adjust_variable_close(" } ");
+
+        assert_eq!(
+            get_variable_content(
+                " { before { inbetween { in } [var } test] } after } ",
+                0,
+                &non_default_op
+            ),
+            Some(String::from("before { inbetween { in"))
+        );
+
+        assert_eq!(
+            get_group_content(
+                " { before { inbetween { in [var test] after ",
+                0,
+                &non_default_op
+            ),
+            None
+        );
+    }
 
     #[test]
     fn test_parsing() {

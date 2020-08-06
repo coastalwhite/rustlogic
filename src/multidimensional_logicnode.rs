@@ -1,3 +1,5 @@
+use crate::operators::OperatorSet;
+
 #[derive(Debug)]
 pub enum MultiDimensionalLogicNode {
     And(Vec<MultiDimensionalLogicNode>),
@@ -63,66 +65,77 @@ impl MultiDimensionalLogicNode {
             super::LogicNode::Variable(var) => MultiDimensionalLogicNode::Variable(var.clone()),
         }
     }
-}
 
-impl std::fmt::Display for MultiDimensionalLogicNode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    pub fn to_string_using_set(&self, operator_set: &OperatorSet) -> String {
         use MultiDimensionalLogicNode::*;
-
-        let display_set = crate::operators::common_sets::default();
 
         match self {
             And(ands) => {
                 if ands.len() == 0 {
-                    return write!(f, "");
+                    return format!("");
                 }
 
                 let joined_strings = super::util::join(
-                    ands.iter().map(|x| format!("{}", x)).collect(),
-                    format!("{}", display_set.and()),
+                    ands.iter()
+                        .map(|x| format!("{}", x.to_string_using_set(operator_set)))
+                        .collect(),
+                    format!("{}", operator_set.and()),
                 );
 
-                write!(
-                    f,
+                format!(
                     "{group_open}{}{group_close}",
                     joined_strings,
-                    group_open = display_set.group_open(),
-                    group_close = display_set.group_close()
+                    group_open = operator_set.group_open(),
+                    group_close = operator_set.group_close()
                 )
             }
             Or(ors) => {
                 if ors.len() == 0 {
-                    return write!(f, "");
+                    return format!("");
                 }
 
                 let joined_strings = super::util::join(
-                    ors.iter().map(|x| format!("{}", x)).collect(),
-                    format!("{}", display_set.or()),
+                    ors.iter()
+                        .map(|x| format!("{}", x.to_string_using_set(operator_set)))
+                        .collect(),
+                    format!("{}", operator_set.or()),
                 );
 
-                write!(
-                    f,
+                format!(
                     "{group_open}{}{group_close}",
                     joined_strings,
-                    group_open = display_set.group_open(),
-                    group_close = display_set.group_close()
+                    group_open = operator_set.group_open(),
+                    group_close = operator_set.group_close()
                 )
             }
 
-            Not(child) => write!(f, "{not_symbol}{}", child, not_symbol = display_set.not()),
+            Not(child) => format!(
+                "{not_symbol}{}",
+                child.to_string_using_set(operator_set),
+                not_symbol = operator_set.not()
+            ),
 
-            True => write!(f, "{}", display_set.true_symbol()),
+            True => format!("{}", operator_set.true_symbol()),
 
-            False => write!(f, "{}", display_set.false_symbol()),
+            False => format!("{}", operator_set.false_symbol()),
 
-            Variable(var) => write!(
-                f,
+            Variable(var) => format!(
                 "{var_open}{}{var_close}",
                 var,
-                var_open = display_set.variable_open(),
-                var_close = display_set.variable_close()
+                var_open = operator_set.variable_open(),
+                var_close = operator_set.variable_close()
             ),
         }
+    }
+}
+
+impl std::fmt::Display for MultiDimensionalLogicNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.to_string_using_set(&crate::operators::common_sets::default())
+        )
     }
 }
 

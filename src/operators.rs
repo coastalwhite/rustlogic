@@ -27,7 +27,7 @@ macro_rules! operator_getset {
 ///
 /// // We create a parsed logic node
 /// let parse_result = rustlogic::custom_parse("(![A]*[B])+[C]", &mathematical_version);
-/// # assert!(parse_result.is_some());
+/// # assert!(parse_result.is_ok());
 ///
 /// // -- snipp
 /// ```
@@ -44,7 +44,7 @@ macro_rules! operator_getset {
 ///
 /// // Attempt to parse a logical string
 /// let parse_result = rustlogic::custom_parse("(NOT $[A] AND $[B]) OR $[C]", &worded_version);
-/// # assert!(parse_result.is_some());
+/// # assert!(parse_result.is_ok());
 ///
 /// // -- snipp
 /// ```
@@ -60,7 +60,7 @@ macro_rules! operator_getset {
 ///
 /// // We create a parsed logic node
 /// let parse_result = rustlogic::custom_parse("{~[A]&[B]}|[C]", &curly_bracket_groups);
-/// # assert!(parse_result.is_some());
+/// # assert!(parse_result.is_ok());
 ///
 /// // -- snipp
 /// ```

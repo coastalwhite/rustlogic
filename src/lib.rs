@@ -36,6 +36,29 @@
 //! # let value = multiplexer_4_to_1.get_value_from_variables(&variable_map).unwrap();
 //! # assert!(!value);
 //! ```
+//!
+//! ## Evaluating a logical string with variables and custom logical operators
+//! ```
+//! use rustlogic::operators;
+//! use std::collections::HashMap;
+//!
+//! // Define the set
+//! let operator_set = operators::common_sets::worded();
+//!
+//! let parsed = rustlogic::custom_parse("(NOT $[A] AND TRUE) OR $[B]", &operator_set);
+//! # assert!(parsed.is_ok());
+//!
+//! // We assign the variables to their values
+//! let mut hm = HashMap::new();
+//! hm.insert("A", false);
+//! hm.insert("B", false);
+//! # assert!(parsed.unwrap().get_value_from_variables(&hm).is_ok());
+//!
+//! // Now contains the value of the logical expression
+//! # let parsed = rustlogic::custom_parse("(NOT $[A] AND TRUE) OR $[B]", &operator_set);
+//! let value = parsed.unwrap().get_value_from_variables(&hm).unwrap();
+//! # assert!(value);
+//! ```
 
 mod multidimensional_logicnode;
 pub mod operators;
@@ -257,14 +280,14 @@ impl LogicNode {
     /// # use rustlogic::parse;
     /// let or = parse("[AND]|[b]").expect("Error parsing or");
     ///
-    /// # assert_eq!(or.to_string(), "([AND]|[b])");
+    /// # assert_eq!(or.to_string(), "( [AND] | [b] )");
     /// let and_in_or = or.insert_formula(
     ///     "AND",
     ///     &parse("[x]&[y]").expect("Error parsing AND")
     /// );
     ///
-    /// println!("{}", and_in_or); // Will print (([x]&[y])|[b])
-    /// # assert_eq!(and_in_or.to_string(), "(([x]&[y])|[b])");
+    /// println!("{}", and_in_or); // Will print ( ( [x] & [y] ) | [b] )
+    /// # assert_eq!(and_in_or.to_string(), "( ( [x] & [y] ) | [b] )");
     pub fn insert_formula(&self, variable: &str, formula: &LogicNode) -> LogicNode {
         use LogicNode::*;
 
@@ -583,7 +606,7 @@ fn infix_parse(
 /// hm.insert("C", false);
 /// # assert!(parsed.unwrap().get_value_from_variables(&hm).is_ok());
 ///
-/// /// Now contains the value of the logical expression
+/// // Now contains the value of the logical expression
 /// # let parsed = rustlogic::custom_parse("(NOT $[A] AND $[B]) OR $[C]", &operator_set);
 /// let value = parsed.unwrap().get_value_from_variables(&hm).unwrap();
 /// # assert!(value);
@@ -967,18 +990,18 @@ mod tests {
     #[test]
     fn test_display() {
         let three_way_and = parse("([a]&[b]&[c])").expect("Unable to parse three way and");
-        assert_eq!("([a]&[b]&[c])", format!("{}", three_way_and));
+        assert_eq!("( [a] & [b] & [c] )", format!("{}", three_way_and));
 
         let three_way_and = parse("(([a]&[b])&[c])").expect("Unable to parse three way and");
-        assert_eq!("([a]&[b]&[c])", format!("{}", three_way_and));
+        assert_eq!("( [a] & [b] & [c] )", format!("{}", three_way_and));
 
         let three_way_and = parse("([a]&([b]&[c]))").expect("Unable to parse three way and");
-        assert_eq!("([a]&[b]&[c])", format!("{}", three_way_and));
+        assert_eq!("( [a] & [b] & [c] )", format!("{}", three_way_and));
 
         let three_way_or = parse("([a]|[b]|[c])").expect("Unable to parse three way or");
-        assert_eq!("([a]|[b]|[c])", format!("{}", three_way_or));
+        assert_eq!("( [a] | [b] | [c] )", format!("{}", three_way_or));
 
         let formula = parse("(~[a]&~[b]&~[c])").expect("Unable to parse three way and");
-        assert_eq!("(~[a]&~[b]&~[c])", format!("{}", formula));
+        assert_eq!("( ~[a] & ~[b] & ~[c] )", format!("{}", formula));
     }
 }

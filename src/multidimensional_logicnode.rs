@@ -134,7 +134,7 @@ impl std::fmt::Display for MultiDimensionalLogicNode {
         write!(
             f,
             "{}",
-            self.to_string_using_set(&crate::operators::common_sets::default())
+            self.to_string_using_set(&crate::operators::common_sets::display())
         )
     }
 }

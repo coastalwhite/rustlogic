@@ -145,4 +145,13 @@ pub mod common_sets {
     pub fn mathematical() -> OperatorSet {
         OperatorSet::new("*", "+", "!", "1", "0", "(", ")", "[", "]")
     }
+
+    /// Returns the display set, this is the default set with some whitespace added
+    ///
+    /// This includes " & ", " | " and "~ " as logical functions,
+    /// "1" and "0" as absolute values, "( " and " )" as group opener and closer
+    /// and "[ " and " ]" as variable opener and closer.
+    pub fn display() -> OperatorSet {
+        OperatorSet::new(" & ", " | ", "~", "1", "0", "( ", " )", "[", "]")
+    }
 }

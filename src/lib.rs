@@ -38,8 +38,10 @@
 //! ```
 
 mod multidimensional_logicnode;
+pub mod operators;
 mod util;
 
+use operators::OperatorSymbols;
 use std::collections::HashMap;
 
 /// An Enum of all the possible states of a head of a logical formula
@@ -315,41 +317,6 @@ impl std::clone::Clone for LogicNode {
     }
 }
 
-/// The opening symbol of a priority group
-/// ## Default: '\('
-pub const DEFAULT_GROUP_OPEN_SYMBOL: &str = "(";
-/// The closing symbol of a priority group
-/// ## Default: '\)'
-pub const DEFAULT_GROUP_CLOSE_SYMBOL: &str = ")";
-
-/// The symbol used for the AND operation
-/// ## Default: '&'
-pub const DEFAULT_AND_SYMBOL: &str = "&";
-
-/// The symbol used for the OR operation
-/// ## Default: '|'
-pub const DEFAULT_OR_SYMBOL: &str = "|";
-
-/// The symbol used for the NOT operation
-/// ## Default: '~'
-pub const DEFAULT_NOT_SYMBOL: &str = "~";
-
-/// The symbol used for true state
-/// ## Default: '1'
-pub const DEFAULT_TRUE_SYMBOL: &str = "1";
-
-/// The symbol used for false state
-/// ## Default: '0'
-pub const DEFAULT_FALSE_SYMBOL: &str = "0";
-
-/// The opening symbol for a variable
-/// ## Default: '\['
-pub const DEFAULT_VARIABLE_OPEN_SYMBOL: &str = "[";
-
-/// The closing symbol for a variable
-/// ## Default: '\]'
-pub const DEFAULT_VARIABLE_CLOSE_SYMBOL: &str = "]";
-
 /// Function used to find the matching parenthesis given a string
 /// and a position open a opening group symbol (taking into account depth)
 /// Will return None if position given is not a bracket or
@@ -361,10 +328,10 @@ fn get_group_content(
 ) -> Option<String> {
     use util::{multi_search, search};
 
-    let opener = operator_symbols.group_open_symbol();
-    let closer = operator_symbols.group_close_symbol();
-    let var_opener = operator_symbols.variable_open_symbol();
-    let var_closer = operator_symbols.variable_close_symbol();
+    let opener = operator_symbols.group_open();
+    let closer = operator_symbols.group_close();
+    let var_opener = operator_symbols.variable_open();
+    let var_closer = operator_symbols.variable_close();
 
     // Check whether input_string starts with opening symbol
     if search(&input_string[position..], opener) != Some(0) {
@@ -441,8 +408,8 @@ fn get_variable_content(
 ) -> Option<String> {
     use util::search;
 
-    let opener = operator_symbols.variable_open_symbol();
-    let closer = operator_symbols.variable_close_symbol();
+    let opener = operator_symbols.variable_open();
+    let closer = operator_symbols.variable_close();
 
     if search(&input_string[position..], opener) != Some(0) {
         return None;
@@ -505,7 +472,7 @@ fn get_variable_content(
 /// # assert!(!value);
 /// ```
 pub fn parse(input_string: &str) -> Result<LogicNode, usize> {
-    let operator_symbols = OperatorSymbols::new();
+    let operator_symbols = operators::common_sets::default();
     let parse_result = custom_parse(input_string, &operator_symbols);
 
     if parse_result.is_some() {
@@ -513,150 +480,6 @@ pub fn parse(input_string: &str) -> Result<LogicNode, usize> {
     }
 
     return Err(input_string.len());
-}
-
-/// OperatorSymbols struct used to specify non-default operator symbols for custom_parse
-#[derive(Clone)]
-pub struct OperatorSymbols {
-    group_open_symbol: String,
-    group_close_symbol: String,
-    and_symbol: String,
-    or_symbol: String,
-    not_symbol: String,
-    true_symbol: String,
-    false_symbol: String,
-    variable_open_symbol: String,
-    variable_close_symbol: String,
-}
-
-impl OperatorSymbols {
-    pub fn new() -> OperatorSymbols {
-        OperatorSymbols {
-            group_open_symbol: String::from(DEFAULT_GROUP_OPEN_SYMBOL),
-            group_close_symbol: String::from(DEFAULT_GROUP_CLOSE_SYMBOL),
-            and_symbol: String::from(DEFAULT_AND_SYMBOL),
-            or_symbol: String::from(DEFAULT_OR_SYMBOL),
-            not_symbol: String::from(DEFAULT_NOT_SYMBOL),
-            true_symbol: String::from(DEFAULT_TRUE_SYMBOL),
-            false_symbol: String::from(DEFAULT_FALSE_SYMBOL),
-            variable_open_symbol: String::from(DEFAULT_VARIABLE_OPEN_SYMBOL),
-            variable_close_symbol: String::from(DEFAULT_VARIABLE_CLOSE_SYMBOL),
-        }
-    }
-
-    pub fn adjust_and(self: Self, to: &str) -> OperatorSymbols {
-        let mut operator_clone = self.clone();
-        operator_clone.and_symbol = String::from(to);
-        operator_clone
-    }
-
-    pub fn adjust_or(self: Self, to: &str) -> OperatorSymbols {
-        let mut operator_clone = self.clone();
-        operator_clone.or_symbol = String::from(to);
-        operator_clone
-    }
-
-    pub fn adjust_not(self: Self, to: &str) -> OperatorSymbols {
-        let mut operator_clone = self.clone();
-        operator_clone.not_symbol = String::from(to);
-        operator_clone
-    }
-
-    pub fn adjust_true(self: Self, to: &str) -> OperatorSymbols {
-        let mut operator_clone = self.clone();
-        operator_clone.true_symbol = String::from(to);
-        operator_clone
-    }
-
-    pub fn adjust_false(self: Self, to: &str) -> OperatorSymbols {
-        let mut operator_clone = self.clone();
-        operator_clone.false_symbol = String::from(to);
-        operator_clone
-    }
-
-    pub fn adjust_group_open(self: Self, to: &str) -> OperatorSymbols {
-        let mut operator_clone = self.clone();
-        operator_clone.group_open_symbol = String::from(to);
-        operator_clone
-    }
-
-    pub fn adjust_group_close(self: Self, to: &str) -> OperatorSymbols {
-        let mut operator_clone = self.clone();
-        operator_clone.group_close_symbol = String::from(to);
-        operator_clone
-    }
-
-    pub fn adjust_variable_open(self: Self, to: &str) -> OperatorSymbols {
-        let mut operator_clone = self.clone();
-        operator_clone.variable_open_symbol = String::from(to);
-        operator_clone
-    }
-
-    pub fn adjust_variable_close(self: Self, to: &str) -> OperatorSymbols {
-        let mut operator_clone = self.clone();
-        operator_clone.variable_close_symbol = String::from(to);
-        operator_clone
-    }
-
-    pub fn new_with(
-        and_symbol: &str,
-        or_symbol: &str,
-        not_symbol: &str,
-        true_symbol: &str,
-        false_symbol: &str,
-        group_open_symbol: &str,
-        group_close_symbol: &str,
-        variable_open_symbol: &str,
-        variable_close_symbol: &str,
-    ) -> OperatorSymbols {
-        OperatorSymbols {
-            group_open_symbol: String::from(group_open_symbol),
-            group_close_symbol: String::from(group_close_symbol),
-            and_symbol: String::from(and_symbol),
-            or_symbol: String::from(or_symbol),
-            not_symbol: String::from(not_symbol),
-            true_symbol: String::from(true_symbol),
-            false_symbol: String::from(false_symbol),
-            variable_open_symbol: String::from(variable_open_symbol),
-            variable_close_symbol: String::from(variable_close_symbol),
-        }
-    }
-
-    pub fn and_symbol(self: &Self) -> &str {
-        &self.and_symbol[..]
-    }
-
-    pub fn or_symbol(self: &Self) -> &str {
-        &self.or_symbol[..]
-    }
-
-    pub fn not_symbol(self: &Self) -> &str {
-        &self.not_symbol[..]
-    }
-
-    pub fn true_symbol(self: &Self) -> &str {
-        &self.true_symbol[..]
-    }
-
-    pub fn false_symbol(self: &Self) -> &str {
-        &self.false_symbol[..]
-    }
-
-    pub fn group_open_symbol(self: &Self) -> &str {
-        &self.group_open_symbol[..]
-    }
-
-    pub fn group_close_symbol(self: &Self) -> &str {
-        &self.group_close_symbol[..]
-    }
-
-    pub fn variable_open_symbol(self: &Self) -> &str {
-        &self.variable_open_symbol[..]
-    }
-
-    pub fn variable_close_symbol(self: &Self) -> &str {
-        &self.variable_close_symbol[..]
-    }
 }
 
 fn easy_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> Option<Option<LogicNode>> {
@@ -680,8 +503,8 @@ fn easy_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> Option<
 
         if variable_content.len()
             == input_string.len()
-                - operator_symbols.variable_open_symbol().len()
-                - operator_symbols.variable_close_symbol().len()
+                - operator_symbols.variable_open().len()
+                - operator_symbols.variable_close().len()
         {
             return Some(Some(Variable(variable_content)));
         }
@@ -693,8 +516,8 @@ fn easy_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> Option<
 
         if group_content.len()
             == input_string.len()
-                - operator_symbols.group_open_symbol().len()
-                - operator_symbols.group_close_symbol().len()
+                - operator_symbols.group_open().len()
+                - operator_symbols.group_close().len()
         {
             return Some(custom_parse(&group_content[..], operator_symbols));
         }
@@ -708,10 +531,10 @@ fn infix_parse(
     position: usize,
     operator_symbols: &OperatorSymbols,
 ) -> Option<LogicNode> {
-    let symbol = if input_string[position..].starts_with(operator_symbols.and_symbol()) {
-        operator_symbols.and_symbol()
-    } else if input_string[position..].starts_with(operator_symbols.or_symbol()) {
-        operator_symbols.or_symbol()
+    let symbol = if input_string[position..].starts_with(operator_symbols.and()) {
+        operator_symbols.and()
+    } else if input_string[position..].starts_with(operator_symbols.or()) {
+        operator_symbols.or()
     } else {
         return None;
     };
@@ -727,7 +550,7 @@ fn infix_parse(
     let right = right.unwrap();
 
     Some(
-        match input_string[position..].starts_with(operator_symbols.and_symbol()) {
+        match input_string[position..].starts_with(operator_symbols.and()) {
             true => LogicNode::And(Box::new(left), Box::new(right)),
             false => LogicNode::Or(Box::new(left), Box::new(right)),
         },
@@ -744,9 +567,9 @@ pub fn custom_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> O
         return easy_parse_option.unwrap();
     }
 
-    if input_string.starts_with(operator_symbols.not_symbol()) {
+    if input_string.starts_with(operator_symbols.not()) {
         let easy_parse_option = easy_parse(
-            &input_string[operator_symbols.not_symbol().len()..],
+            &input_string[operator_symbols.not().len()..],
             operator_symbols,
         );
         if easy_parse_option.is_some() {
@@ -760,9 +583,9 @@ pub fn custom_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> O
     use util::multi_search;
 
     let multi_search_query = vec![
-        operator_symbols.group_open_symbol(),
-        operator_symbols.and_symbol(),
-        operator_symbols.or_symbol(),
+        operator_symbols.group_open(),
+        operator_symbols.and(),
+        operator_symbols.or(),
     ];
     let multi_search = multi_search(input_string, &multi_search_query);
 
@@ -779,8 +602,8 @@ pub fn custom_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> O
                 input_string,
                 pool_index
                     + group_content.unwrap().len()
-                    + operator_symbols.group_open_symbol().len()
-                    + operator_symbols.group_close_symbol().len(),
+                    + operator_symbols.group_open().len()
+                    + operator_symbols.group_close().len(),
                 operator_symbols,
             )
         }
@@ -794,7 +617,7 @@ mod tests {
 
     #[test]
     fn test_get_group_content() {
-        let default_op = OperatorSymbols::new();
+        let default_op = operators::common_sets::default();
 
         assert_eq!(
             get_group_content("(Hi)", 0, &default_op),
@@ -806,7 +629,7 @@ mod tests {
             Some(String::from("before(inbetween(in)[var)test])after"))
         );
 
-        let non_default_op = OperatorSymbols::new()
+        let non_default_op = operators::common_sets::default()
             .adjust_group_open(" { ")
             .adjust_group_close(" } ");
 
@@ -842,7 +665,7 @@ mod tests {
 
     #[test]
     fn test_get_variable_content() {
-        let default_op = OperatorSymbols::new();
+        let default_op = operators::common_sets::default();
 
         assert_eq!(
             get_variable_content("[Hi]", 0, &default_op),
@@ -854,7 +677,7 @@ mod tests {
             Some(String::from("before(inbetween(in)[var)test"))
         );
 
-        let non_default_op = OperatorSymbols::new()
+        let non_default_op = operators::common_sets::default()
             .adjust_variable_open(" { ")
             .adjust_variable_close(" } ");
 
@@ -879,9 +702,7 @@ mod tests {
 
     #[test]
     fn test_operator_symbols() {
-        let operator_symbols = OperatorSymbols::new_with(
-            " AND ", " OR ", "NOT ", "TRUE", "FALSE", "(", ")", "$[", "]",
-        );
+        let operator_symbols = operators::common_sets::worded();
 
         let mut hm = HashMap::new();
 

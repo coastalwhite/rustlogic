@@ -69,6 +69,8 @@ impl std::fmt::Display for MultiDimensionalLogicNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use MultiDimensionalLogicNode::*;
 
+        let display_set = crate::operators::common_sets::default();
+
         match self {
             And(ands) => {
                 if ands.len() == 0 {
@@ -77,15 +79,15 @@ impl std::fmt::Display for MultiDimensionalLogicNode {
 
                 let joined_strings = super::util::join(
                     ands.iter().map(|x| format!("{}", x)).collect(),
-                    format!("{}", super::DEFAULT_AND_SYMBOL),
+                    format!("{}", display_set.and()),
                 );
 
                 write!(
                     f,
                     "{group_open}{}{group_close}",
                     joined_strings,
-                    group_open = super::DEFAULT_GROUP_OPEN_SYMBOL,
-                    group_close = super::DEFAULT_GROUP_CLOSE_SYMBOL
+                    group_open = display_set.group_open(),
+                    group_close = display_set.group_close()
                 )
             }
             Or(ors) => {
@@ -95,35 +97,30 @@ impl std::fmt::Display for MultiDimensionalLogicNode {
 
                 let joined_strings = super::util::join(
                     ors.iter().map(|x| format!("{}", x)).collect(),
-                    format!("{}", super::DEFAULT_OR_SYMBOL),
+                    format!("{}", display_set.or()),
                 );
 
                 write!(
                     f,
                     "{group_open}{}{group_close}",
                     joined_strings,
-                    group_open = super::DEFAULT_GROUP_OPEN_SYMBOL,
-                    group_close = super::DEFAULT_GROUP_CLOSE_SYMBOL
+                    group_open = display_set.group_open(),
+                    group_close = display_set.group_close()
                 )
             }
 
-            Not(child) => write!(
-                f,
-                "{not_symbol}{}",
-                child,
-                not_symbol = super::DEFAULT_NOT_SYMBOL
-            ),
+            Not(child) => write!(f, "{not_symbol}{}", child, not_symbol = display_set.not()),
 
-            True => write!(f, "{}", super::DEFAULT_TRUE_SYMBOL),
+            True => write!(f, "{}", display_set.true_symbol()),
 
-            False => write!(f, "{}", super::DEFAULT_FALSE_SYMBOL),
+            False => write!(f, "{}", display_set.false_symbol()),
 
             Variable(var) => write!(
                 f,
                 "{var_open}{}{var_close}",
                 var,
-                var_open = super::DEFAULT_VARIABLE_OPEN_SYMBOL,
-                var_close = super::DEFAULT_VARIABLE_CLOSE_SYMBOL
+                var_open = display_set.variable_open(),
+                var_close = display_set.variable_close()
             ),
         }
     }

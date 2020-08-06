@@ -6,7 +6,7 @@
 //!
 //! Thanks for your time and enjoy this crate!
 //!
-//! # Example
+//! # Examples
 //! ## 4-1 Multiplexer
 //! ```
 //! # use std::collections::HashMap;

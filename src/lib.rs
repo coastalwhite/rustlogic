@@ -784,7 +784,7 @@ pub fn custom_parse(input_string: &str, operator_symbols: &OperatorSymbols) -> O
                 operator_symbols,
             )
         }
-        Some((query_index, pool_index)) => infix_parse(input_string, pool_index, operator_symbols),
+        Some((_, pool_index)) => infix_parse(input_string, pool_index, operator_symbols),
     }
 }
 
@@ -874,6 +874,40 @@ mod tests {
                 &non_default_op
             ),
             None
+        );
+    }
+
+    #[test]
+    fn test_operator_symbols() {
+        let operator_symbols = OperatorSymbols::new_with(
+            " AND ", " OR ", "NOT ", "TRUE", "FALSE", "(", ")", "$[", "]",
+        );
+
+        let mut hm = HashMap::new();
+
+        hm.insert("A", false);
+        hm.insert("B", true);
+        hm.insert("C", false);
+
+        assert!(
+            custom_parse("(NOT $[A] AND $[B]) OR $[C]", &operator_symbols)
+                .unwrap()
+                .get_value_from_variables(&hm)
+                .unwrap()
+        );
+
+        assert!(
+            custom_parse("($[A] AND $[B]) OR NOT $[C]", &operator_symbols)
+                .unwrap()
+                .get_value_from_variables(&hm)
+                .unwrap()
+        );
+
+        assert!(
+            !custom_parse("($[A] AND NOT $[B]) OR $[C]", &operator_symbols)
+                .unwrap()
+                .get_value_from_variables(&hm)
+                .unwrap()
         );
     }
 

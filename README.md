@@ -1,6 +1,4 @@
-# RustLogic
-
-RustLogic is a crate for parsing and handling simple logical expressings with rust.
+Hello fellow Rustacians! RustLogic is a crate for parsing and handling simple logical expressings.
 
 # Description
 

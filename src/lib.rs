@@ -868,6 +868,7 @@ mod tests {
         hm.insert("a", false);
         hm.insert("b", false);
 
+        assert!(parse("][]").is_err());
         assert!(!parse("[a]").unwrap().get_value_from_variables(&hm).unwrap());
         assert!(parse("~[a]")
             .unwrap()

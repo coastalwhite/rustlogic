@@ -46,7 +46,7 @@ pub fn multi_search(pool: &str, spears: &Vec<&str>) -> Option<(usize, usize)> {
         }
     }
 
-    if pool.len() == 1 {
+    if pool.len() <= 1 {
         return None;
     }
 
@@ -76,5 +76,7 @@ mod tests {
         assert_eq!(multi_search("Hello Wrld!", &query), None);
 
         assert_eq!(multi_search("Hello Boy!", &query), Some((1, 6)));
+
+        assert_eq!(multi_search("][]", &vec!["[", "]"]), Some((1, 0)));
     }
 }

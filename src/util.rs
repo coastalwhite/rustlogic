@@ -35,7 +35,7 @@ pub fn search(pool: &str, spear: &str) -> Option<usize> {
 
 /// Function used to find first occurance of a number of substrings (spears) in a bigger string (pool)
 /// Will return None if no match is found and will ignore empty spears
-pub fn multi_search(pool: &str, spears: &Vec<&str>) -> Option<(usize, usize)> {
+pub fn multi_search(pool: &str, spears: &[&str]) -> Option<(usize, usize)> {
     for (spear_index, spear) in spears.iter().enumerate() {
         if pool.len() < spear.len() || spear.is_empty() {
             continue;
@@ -46,7 +46,7 @@ pub fn multi_search(pool: &str, spears: &Vec<&str>) -> Option<(usize, usize)> {
         }
     }
 
-    if pool.len() == 1 {
+    if pool.len() <= 1 {
         return None;
     }
 
@@ -69,12 +69,14 @@ mod tests {
 
     #[test]
     fn ut_multi_search() {
-        let query = vec!["World", "Boy"];
+        let query = ["World", "Boy"];
 
         assert_eq!(multi_search("hi", &query), None);
         assert_eq!(multi_search("Hello World!", &query), Some((0, 6)));
         assert_eq!(multi_search("Hello Wrld!", &query), None);
 
         assert_eq!(multi_search("Hello Boy!", &query), Some((1, 6)));
+
+        assert_eq!(multi_search("][]", &["[", "]"]), Some((1, 0)));
     }
 }

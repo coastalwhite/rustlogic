@@ -68,7 +68,7 @@ use operators::OperatorSet;
 use std::collections::HashMap;
 
 /// An Enum of all the possible states of a head of a logical formula
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LogicNode {
     /// AND operation of left and right
     And(Box<LogicNode>, Box<LogicNode>),
@@ -346,21 +346,6 @@ impl std::fmt::Display for LogicNode {
     }
 }
 
-impl std::clone::Clone for LogicNode {
-    fn clone(&self) -> Self {
-        use LogicNode::*;
-
-        match self {
-            And(left, right) => And(left.clone(), right.clone()),
-            Or(left, right) => Or(left.clone(), right.clone()),
-            Not(child) => Not(child.clone()),
-            True => True,
-            False => False,
-            Variable(var) => Variable(var.clone()),
-        }
-    }
-}
-
 /// Function used to find the matching parenthesis given a string
 /// and a position open a opening group symbol (taking into account depth)
 /// Will return None if position given is not a bracket or
@@ -385,7 +370,7 @@ fn get_group_content(
     let mut depth: u16 = 0;
     let mut search_location = position + opener.len();
 
-    let multi_search_query = vec![opener, closer, var_opener];
+    let multi_search_query = [opener, closer, var_opener];
 
     // Search through string for the first occurance of a opening or closing symbol
     let mut search_result = multi_search(&input_string[search_location..], &multi_search_query);
@@ -629,7 +614,7 @@ pub fn custom_parse(input_string: &str, operator_set: &OperatorSet) -> Result<Lo
 
     use util::multi_search;
 
-    let multi_search_query = vec![
+    let multi_search_query = [
         operator_set.group_open(),
         operator_set.variable_open(),
         operator_set.and(),
@@ -868,6 +853,7 @@ mod tests {
         hm.insert("a", false);
         hm.insert("b", false);
 
+        assert!(parse("][]").is_err());
         assert!(!parse("[a]").unwrap().get_value_from_variables(&hm).unwrap());
         assert!(parse("~[a]")
             .unwrap()

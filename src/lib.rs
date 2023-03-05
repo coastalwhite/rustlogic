@@ -385,7 +385,7 @@ fn get_group_content(
     let mut depth: u16 = 0;
     let mut search_location = position + opener.len();
 
-    let multi_search_query = vec![opener, closer, var_opener];
+    let multi_search_query = [opener, closer, var_opener];
 
     // Search through string for the first occurance of a opening or closing symbol
     let mut search_result = multi_search(&input_string[search_location..], &multi_search_query);
